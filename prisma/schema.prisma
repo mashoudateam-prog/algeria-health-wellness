@@ -1,0 +1,814 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==================== CORE MODELS ====================
+
+model User {
+  id            String          @id @default(cuid())
+  email         String          @unique
+  name          String?
+  phone         String?
+  password      String?
+  role          UserRole        @default(PATIENT)
+  avatar        String?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  
+  // Relations
+  patientProfile      PatientProfile?
+  professionalProfile ProfessionalProfile?
+  adminProfile        AdminProfile?
+  sessions            Session[]
+  auditLogs           AuditLog[]
+  notifications       Notification[]
+  documents           Document[]
+  documentShares      DocumentShare[]
+  journeys            Journey[]
+  appointments        Appointment[]
+  reviews             Review[]
+  conversations       Conversation[]
+  
+  @@map("users")
+}
+
+enum UserRole {
+  PATIENT
+  PROFESSIONAL
+  FACILITY_ADMIN
+  PLATFORM_ADMIN
+}
+
+model Session {
+  id            String          @id @default(cuid())
+  sessionToken  String          @unique
+  userId        String
+  user          User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expires       DateTime
+  createdAt     DateTime        @default(now())
+  
+  @@map("sessions")
+}
+
+// ==================== PATIENT PROFILE ====================
+
+model PatientProfile {
+  id                String            @id @default(cuid())
+  userId            String            @unique
+  user              User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Personal Info
+  firstName         String?
+  lastName          String?
+  dateOfBirth       DateTime?
+  gender            String?
+  nationalId        String?
+  passport          String?
+  
+  // Contact
+  address           String?
+  city              String?
+  country           String?
+  zipCode           String?
+  phone             String?
+  
+  // Medical
+  bloodType         String?
+  allergies         String?
+  medicalHistory    String?
+  currentMedications String?
+  
+  // Preferences
+  preferredLanguages String[]  @default([])
+  preferredSpecialties String[] @default([])
+  
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  
+  // Relations
+  healthPassport    HealthPassport?
+  journeys          Journey[]
+  appointments      Appointment[]
+  bookings          Booking[]
+  documents         Document[]
+  
+  @@map("patient_profiles")
+}
+
+model HealthPassport {
+  id                    String      @id @default(cuid())
+  patientProfileId      String      @unique
+  patientProfile        PatientProfile @relation(fields: [patientProfileId], references: [id], onDelete: Cascade)
+  
+  medicalSummary        String?
+  currentTreatments     String?
+  surgicalHistory       String?
+  familyMedicalHistory  String?
+  vaccinationStatus     String?
+  lastCheckup           DateTime?
+  
+  createdAt             DateTime    @default(now())
+  updatedAt             DateTime    @updatedAt
+  
+  @@map("health_passports")
+}
+
+// ==================== PROFESSIONAL PROFILE ====================
+
+model ProfessionalProfile {
+  id                String            @id @default(cuid())
+  userId            String            @unique
+  user              User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Professional Info
+  licenseNumber     String            @unique
+  specialties       String[]          @default([])
+  licenseExpiry     DateTime?
+  yearsExperience   Int               @default(0)
+  bio               String?
+  profileImage      String?
+  
+  // Languages
+  languages         String[]          @default(["Arabic", "French"])
+  
+  // Facility
+  facilityId        String?
+  facility          HealthcareFacility? @relation(fields: [facilityId], references: [id])
+  
+  // Verification
+  isVerified        Boolean           @default(false)
+  verificationDate  DateTime?
+  verifiedBy        String?
+  
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  
+  // Relations
+  specialization    Specialty[]       @relation("ProfessionalToSpecialty")
+  availability      Availability[]
+  appointments      Appointment[]
+  consultations     Consultation[]
+  reviews           Review[]
+  
+  @@map("professional_profiles")
+}
+
+model AdminProfile {
+  id                String      @id @default(cuid())
+  userId            String      @unique
+  user              User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  permissions       String[]    @default([])
+  department        String?
+  
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+  
+  @@map("admin_profiles")
+}
+
+// ==================== HEALTHCARE FACILITIES ====================
+
+model HealthcareFacility {
+  id                String            @id @default(cuid())
+  name              String
+  slug              String            @unique
+  description       String?
+  
+  // Contact & Location
+  email             String?
+  phone             String?
+  website           String?
+  address           String
+  city              String
+  region            String
+  latitude          Float?
+  longitude         Float?
+  
+  // Facility Info
+  facilityType      String            // "Hospital", "Clinic", "Dental", "Wellness"
+  licenseNumber     String?
+  licenseExpiry     DateTime?
+  
+  // Verification
+  isVerified        Boolean           @default(false)
+  verificationDate  DateTime?
+  rating            Float             @default(0)
+  reviewCount       Int               @default(0)
+  
+  // Services & Capacity
+  services          Service[]
+  specialties       Specialty[]
+  totalBeds         Int?
+  operatingRooms    Int?
+  
+  // Images & Media
+  images            String[]          @default([])
+  logo              String?
+  
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  
+  // Relations
+  professionals     ProfessionalProfile[]
+  appointments      Appointment[]
+  bookings          Booking[]
+  reviews           Review[]
+  
+  @@map("healthcare_facilities")
+}
+
+model WellnessFacility {
+  id                String      @id @default(cuid())
+  name              String
+  slug              String      @unique
+  description       String?
+  
+  // Contact & Location
+  email             String?
+  phone             String?
+  website           String?
+  address           String
+  city              String
+  region            String
+  latitude          Float?
+  longitude         Float?
+  
+  // Facility Info
+  facilityType      String      // "Spa", "Wellness Center", "Thermal", "Fitness", "Retreat"
+  
+  // Verification
+  isVerified        Boolean     @default(false)
+  rating            Float       @default(0)
+  reviewCount       Int         @default(0)
+  
+  // Media
+  images            String[]    @default([])
+  logo              String?
+  
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+  
+  // Relations
+  services          Service[]
+  bookings          Booking[]
+  reviews           Review[]
+  
+  @@map("wellness_facilities")
+}
+
+// ==================== SERVICES & SPECIALTIES ====================
+
+model Service {
+  id                String              @id @default(cuid())
+  name              String
+  slug              String
+  description       String?
+  category          String              // "Medical", "Dental", "Wellness", "Cosmetic", "Thermal"
+  
+  // Pricing & Details
+  basePrice         Float?
+  currency          String              @default("DZD")
+  duration          Int?                // in minutes
+  
+  // Relations
+  healthcareFacilityId  String?
+  healthcareFacility    HealthcareFacility? @relation(fields: [healthcareFacilityId], references: [id], onDelete: Cascade)
+  
+  wellnessFacilityId    String?
+  wellnessFacility      WellnessFacility? @relation(fields: [wellnessFacilityId], references: [id], onDelete: Cascade)
+  
+  specialties       Specialty[]         @relation("ServiceToSpecialty")
+  journeySteps      JourneyStep[]
+  
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  
+  @@unique([healthcareFacilityId, slug])
+  @@unique([wellnessFacilityId, slug])
+  @@map("services")
+}
+
+model Specialty {
+  id                String              @id @default(cuid())
+  name              String              @unique
+  slug              String              @unique
+  description       String?
+  icon              String?
+  category          String              // "Medical", "Dental", "Wellness", "Cosmetic"
+  
+  // Relations
+  professionals     ProfessionalProfile[] @relation("ProfessionalToSpecialty")
+  facilities        HealthcareFacility[]
+  services          Service[]           @relation("ServiceToSpecialty")
+  
+  createdAt         DateTime            @default(now())
+  
+  @@map("specialties")
+}
+
+// ==================== DESTINATIONS ====================
+
+model Destination {
+  id                String      @id @default(cuid())
+  name              String      @unique
+  slug              String      @unique
+  region            String
+  description       String?
+  longDescription   String?
+  
+  // Location
+  latitude          Float
+  longitude         Float
+  
+  // Content
+  highlights        String[]
+  attractions       String[]
+  specialties       String[]
+  
+  // Media
+  thumbnail         String?
+  images            String[]    @default([])
+  
+  // SEO
+  metaTitle         String?
+  metaDescription   String?
+  
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+  
+  @@map("destinations")
+}
+
+// ==================== JOURNEY & APPOINTMENTS ====================
+
+model Journey {
+  id                String        @id @default(cuid())
+  patientProfileId  String
+  patientProfile    PatientProfile @relation(fields: [patientProfileId], references: [id], onDelete: Cascade)
+  
+  // Journey Details
+  title             String
+  description       String?
+  status            JourneyStatus @default(DRAFT)
+  
+  // Timeline
+  startDate         DateTime?
+  endDate           DateTime?
+  duration          Int?          // in days
+  
+  // Objectives
+  objectives        String[]      @default([])
+  specialties       String[]      @default([])
+  
+  // AI Generated
+  aiRecommendations String?
+  journeyPlan       String?       // JSON structure
+  
+  // Budget
+  estimatedBudget   Float?
+  currency          String        @default("DZD")
+  
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  
+  // Relations
+  steps             JourneyStep[]
+  appointments      Appointment[]
+  documents         Document[]
+  
+  @@map("journeys")
+}
+
+enum JourneyStatus {
+  DRAFT
+  PLANNED
+  ONGOING
+  COMPLETED
+  ARCHIVED
+}
+
+model JourneyStep {
+  id                String      @id @default(cuid())
+  journeyId         String
+  journey           Journey     @relation(fields: [journeyId], references: [id], onDelete: Cascade)
+  
+  stepNumber        Int
+  title             String
+  description       String?
+  type              String      // "Consultation", "Procedure", "Wellness", "Recovery", "Activity"
+  
+  scheduledDate     DateTime?
+  duration          Int?        // in minutes
+  
+  serviceId         String?
+  service           Service?    @relation(fields: [serviceId], references: [id])
+  
+  notes             String?
+  
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+  
+  // Relations
+  appointment       Appointment?
+  
+  @@map("journey_steps")
+}
+
+model Appointment {
+  id                    String              @id @default(cuid())
+  
+  // References
+  journeyId             String?
+  journey               Journey?            @relation(fields: [journeyId], references: [id], onDelete: SetNull)
+  
+  journeyStepId         String?             @unique
+  journeyStep           JourneyStep?        @relation(fields: [journeyStepId], references: [id], onDelete: SetNull)
+  
+  patientProfileId      String
+  patientProfile        PatientProfile      @relation(fields: [patientProfileId], references: [id], onDelete: Cascade)
+  
+  healthcareFacilityId  String?
+  healthcareFacility    HealthcareFacility? @relation(fields: [healthcareFacilityId], references: [id], onDelete: SetNull)
+  
+  professionalId        String?
+  professional          ProfessionalProfile? @relation(fields: [professionalId], references: [id], onDelete: SetNull)
+  
+  userId                String
+  user                  User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Appointment Details
+  title                 String
+  description           String?
+  type                  String              // "Consultation", "Procedure", "Check-up"
+  status                AppointmentStatus   @default(PENDING)
+  
+  scheduledAt           DateTime
+  duration              Int?                // in minutes
+  notes                 String?
+  
+  // Confirmation
+  confirmedAt           DateTime?
+  confirmedBy           String?
+  
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
+  
+  @@map("appointments")
+}
+
+enum AppointmentStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+  RESCHEDULED
+}
+
+model Availability {
+  id                    String              @id @default(cuid())
+  professionalId        String
+  professional          ProfessionalProfile @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+  
+  dayOfWeek             Int                 // 0-6 (Sunday-Saturday)
+  startTime             String              // HH:MM
+  endTime               String              // HH:MM
+  
+  maxAppointmentsPerDay Int                 @default(10)
+  slotDuration          Int                 @default(30)  // in minutes
+  
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
+  
+  @@unique([professionalId, dayOfWeek, startTime])
+  @@map("availabilities")
+}
+
+// ==================== DOCUMENTS & VAULT ====================
+
+model Document {
+  id                String          @id @default(cuid())
+  patientProfileId  String
+  patientProfile    PatientProfile  @relation(fields: [patientProfileId], references: [id], onDelete: Cascade)
+  
+  userId            String
+  user              User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Document Details
+  name              String
+  type              String          // "Medical Report", "Lab Result", "Prescription", "Imaging", "Invoice", "Insurance"
+  description       String?
+  
+  // File Info
+  fileUrl           String
+  fileSize          Int?
+  mimeType          String?
+  
+  // Metadata
+  issuedDate        DateTime?
+  expiryDate        DateTime?
+  issuer            String?         // Name of hospital/clinic
+  
+  // Sharing
+  shares            DocumentShare[]
+  
+  journeyId         String?
+  journey           Journey?        @relation(fields: [journeyId], references: [id], onDelete: SetNull)
+  
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  
+  @@map("documents")
+}
+
+model DocumentShare {
+  id                String      @id @default(cuid())
+  documentId        String
+  document          Document    @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  
+  userId            String
+  user              User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Sharing Details
+  sharedBy          String      // userId who shared
+  sharedWith        String      // userId or email
+  
+  accessType        String      @default("VIEW") // "VIEW", "DOWNLOAD"
+  expiresAt         DateTime?
+  
+  createdAt         DateTime    @default(now())
+  
+  @@unique([documentId, sharedWith])
+  @@map("document_shares")
+}
+
+// ==================== BOOKINGS & QUOTES ====================
+
+model Booking {
+  id                    String              @id @default(cuid())
+  
+  patientProfileId      String
+  patientProfile        PatientProfile      @relation(fields: [patientProfileId], references: [id], onDelete: Cascade)
+  
+  healthcareFacilityId  String?
+  healthcareFacility    HealthcareFacility? @relation(fields: [healthcareFacilityId], references: [id], onDelete: SetNull)
+  
+  wellnessFacilityId    String?
+  wellnessFacility      WellnessFacility?   @relation(fields: [wellnessFacilityId], references: [id], onDelete: SetNull)
+  
+  journeyId             String?
+  journey               Journey?            @relation(fields: [journeyId], references: [id])
+  
+  // Booking Details
+  status                BookingStatus       @default(PENDING)
+  bookingNumber         String              @unique @default(cuid())
+  
+  checkInDate           DateTime
+  checkOutDate          DateTime
+  numberOfGuests        Int                 @default(1)
+  
+  // Quote
+  quote                 Quote?
+  
+  // Notes
+  specialRequests       String?
+  notes                 String?
+  
+  // Confirmation
+  confirmedAt           DateTime?
+  paymentStatus         String              @default("PENDING") // "PENDING", "COMPLETED", "FAILED"
+  
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
+  
+  @@map("bookings")
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+  NO_SHOW
+}
+
+model Quote {
+  id                String      @id @default(cuid())
+  bookingId         String      @unique
+  booking           Booking     @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  
+  // Items
+  items             QuoteItem[]
+  
+  // Totals
+  subtotal          Float       @default(0)
+  tax               Float       @default(0)
+  discount          Float       @default(0)
+  total             Float       @default(0)
+  currency          String      @default("DZD")
+  
+  // Terms
+  validUntil        DateTime?
+  notes             String?
+  
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+  
+  @@map("quotes")
+}
+
+model QuoteItem {
+  id                String      @id @default(cuid())
+  quoteId           String
+  quote             Quote       @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  
+  description       String
+  quantity          Int         @default(1)
+  unitPrice         Float
+  total             Float
+  
+  @@map("quote_items")
+}
+
+// ==================== REVIEWS & RATINGS ====================
+
+model Review {
+  id                    String              @id @default(cuid())
+  
+  // Author
+  userId                String
+  user                  User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Target
+  healthcareFacilityId  String?
+  healthcareFacility    HealthcareFacility? @relation(fields: [healthcareFacilityId], references: [id], onDelete: Cascade)
+  
+  wellnessFacilityId    String?
+  wellnessFacility      WellnessFacility?   @relation(fields: [wellnessFacilityId], references: [id], onDelete: Cascade)
+  
+  professionalId        String?
+  professional          ProfessionalProfile? @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+  
+  // Review Content
+  title                 String?
+  content               String
+  rating                Int                 // 1-5
+  
+  // Structured Feedback
+  categories            ReviewCategory[]
+  
+  // Moderation
+  status                String              @default("PENDING") // "PENDING", "APPROVED", "REJECTED"
+  moderatedAt           DateTime?
+  moderatedBy           String?
+  
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
+  
+  @@map("reviews")
+}
+
+model ReviewCategory {
+  id                String      @id @default(cuid())
+  reviewId          String
+  review            Review      @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  
+  category          String      // "Cleanliness", "Staff", "Communication", "Results", "Value"
+  rating            Int         // 1-5
+  
+  @@unique([reviewId, category])
+  @@map("review_categories")
+}
+
+// ==================== CONSULTATIONS ====================
+
+model Consultation {
+  id                    String              @id @default(cuid())
+  professionalId        String
+  professional          ProfessionalProfile @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+  
+  // Details
+  type                  String              // "Initial", "Follow-up", "Second Opinion"
+  status                String              @default("PENDING")
+  
+  description           String?
+  attachments           String[]            @default([])
+  
+  // Response
+  response              String?
+  responseDate          DateTime?
+  
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
+  
+  @@map("consultations")
+}
+
+// ==================== MESSAGING & CONVERSATIONS ====================
+
+model Conversation {
+  id                String        @id @default(cuid())
+  userId            String
+  user              User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  type              String        @default("AI") // "AI", "SUPPORT", "PROFESSIONAL"
+  subject           String?
+  
+  messages          Message[]
+  
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  
+  @@map("conversations")
+}
+
+model Message {
+  id                String        @id @default(cuid())
+  conversationId    String
+  conversation      Conversation  @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  
+  role              String        // "user", "assistant", "system"
+  content           String
+  
+  metadata          String?       // JSON
+  
+  createdAt         DateTime      @default(now())
+  
+  @@map("messages")
+}
+
+// ==================== AUDIT & SECURITY ====================
+
+model AuditLog {
+  id                String      @id @default(cuid())
+  userId            String
+  user              User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  action            String      // "CREATE", "UPDATE", "DELETE", "VIEW", "LOGIN", "LOGOUT"
+  resource          String      // "User", "Document", "Appointment", etc.
+  resourceId        String?
+  
+  oldValues         String?     // JSON
+  newValues         String?     // JSON
+  
+  ipAddress         String?
+  userAgent         String?
+  
+  createdAt         DateTime    @default(now())
+  
+  @@index([userId])
+  @@index([resource])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+// ==================== NOTIFICATIONS ====================
+
+model Notification {
+  id                String      @id @default(cuid())
+  userId            String
+  user              User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  type              String      // "appointment", "message", "document", "booking"
+  title             String
+  content           String
+  
+  isRead            Boolean     @default(false)
+  readAt            DateTime?
+  
+  actionUrl         String?
+  
+  createdAt         DateTime    @default(now())
+  
+  @@index([userId])
+  @@index([isRead])
+  @@map("notifications")
+}
+
+// ==================== CONSENT & COMPLIANCE ====================
+
+model Consent {
+  id                String      @id @default(cuid())
+  userId            String
+  
+  type              String      // "Privacy", "Marketing", "DataProcessing", "Terms"
+  version           String      @default("1.0")
+  
+  isAccepted        Boolean
+  acceptedAt        DateTime?
+  
+  ipAddress         String?
+  
+  createdAt         DateTime    @default(now())
+  
+  @@unique([userId, type, version])
+  @@map("consents")
+}
