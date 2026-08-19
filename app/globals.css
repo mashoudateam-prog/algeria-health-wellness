@@ -1,0 +1,313 @@
+@import "tailwindcss";
+
+/* ============================================================
+   ALGERIA HEALTH & WELLNESS — DESIGN SYSTEM
+   Ivoire, sable, vert profond, bleu méditerranéen, terracotta.
+   Sobre, éditorial, hospitalier. Aucun gradient décoratif.
+   ============================================================ */
+
+@theme {
+  --color-ivory: #f7f4ee;
+  --color-sand: #efe9dd;
+  --color-sand-deep: #e4dccb;
+  --color-forest: #17382f;
+  --color-forest-soft: #244e42;
+  --color-sage: #7d927b;
+  --color-med: #2f5f73;
+  --color-med-soft: #6d94a4;
+  --color-terracotta: #9a6845;
+  --color-terracotta-soft: #c08a63;
+  --color-ink: #16251f;
+
+  --font-display: var(--font-fraunces), "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  --radius-card: 28px;
+  --radius-panel: 36px;
+
+  --ease-soft: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+:root {
+  --background: #f7f4ee;
+  --surface: #ffffff;
+  --surface-soft: #f1ece2;
+  --surface-deep: #17382f;
+  --text: #16251f;
+  --muted: #5d6b64;
+  --faint: #8b968f;
+  --primary: #17382f;
+  --primary-hover: #244e42;
+  --secondary: #2f5f73;
+  --accent: #9a6845;
+  --accent-hover: #86593a;
+  --border: rgba(22, 37, 31, 0.1);
+  --border-strong: rgba(22, 37, 31, 0.18);
+
+  --shadow-soft: 0 1px 2px rgba(22, 37, 31, 0.04), 0 8px 24px -12px rgba(22, 37, 31, 0.12);
+  --shadow-lift: 0 2px 6px rgba(22, 37, 31, 0.06), 0 24px 56px -24px rgba(22, 37, 31, 0.24);
+
+  --step0: clamp(0.94rem, 0.9rem + 0.18vw, 1rem);
+  --step1: clamp(1.1rem, 1.02rem + 0.35vw, 1.28rem);
+  --step2: clamp(1.4rem, 1.24rem + 0.7vw, 1.85rem);
+  --step3: clamp(1.9rem, 1.55rem + 1.6vw, 3rem);
+  --step4: clamp(2.5rem, 1.8rem + 3.2vw, 4.6rem);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--background);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: var(--step0);
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Grain photographique très subtil : évite un aplat numérique trop parfait. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0.035;
+  background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIj48ZmlsdGVyIGlkPSJuIj48ZmVUdXJidWxlbmNlIHR5cGU9ImZyYWN0YWxOb2lzZSIgYmFzZUZyZXF1ZW5jeT0iMC44IiBudW1PY3RhdmVzPSIzIi8+PC9maWx0ZXI+PHJlY3Qgd2lkdGg9IjIwMCIgaGVpZ2h0PSIyMDAiIGZpbHRlcj0idXJsKCNuKSIvPjwvc3ZnPg==");
+}
+
+h1, h2, h3, .display {
+  font-family: var(--font-display);
+  font-weight: 400;
+  letter-spacing: -0.035em;
+  line-height: 1.03;
+  margin: 0;
+  text-wrap: balance;
+}
+
+p { margin: 0; text-wrap: pretty; }
+
+a { color: inherit; text-decoration: none; }
+
+button, input, textarea, select { font: inherit; color: inherit; }
+
+::selection { background: var(--accent); color: #fff; }
+
+:focus-visible {
+  outline: 2px solid var(--secondary);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+/* ---------- Typographie utilitaire ---------- */
+
+.eyebrow {
+  font-size: 0.68rem;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  color: var(--accent);
+  font-weight: 500;
+}
+
+.eyebrow-line {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.85rem;
+}
+.eyebrow-line::before {
+  content: "";
+  width: 2.2rem;
+  height: 1px;
+  background: currentColor;
+  opacity: 0.55;
+}
+
+.lede {
+  font-size: var(--step1);
+  line-height: 1.62;
+  color: var(--muted);
+}
+
+.muted { color: var(--muted); }
+.faint { color: var(--faint); }
+.serif { font-family: var(--font-display); }
+
+/* ---------- Primitives ---------- */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  padding: 0.95rem 1.6rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 220ms var(--ease-soft), color 220ms var(--ease-soft),
+    border-color 220ms var(--ease-soft), transform 220ms var(--ease-soft);
+  white-space: nowrap;
+}
+.btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.btn:active:not(:disabled) { transform: translateY(1px); }
+
+.btn-primary { background: var(--primary); color: #fff; }
+.btn-primary:hover:not(:disabled) { background: var(--primary-hover); }
+
+.btn-ghost {
+  background: rgba(255, 255, 255, 0.62);
+  border-color: var(--border-strong);
+  color: var(--text);
+}
+.btn-ghost:hover:not(:disabled) { background: #fff; border-color: var(--text); }
+
+.btn-accent { background: var(--accent); color: #fff; }
+.btn-accent:hover:not(:disabled) { background: var(--accent-hover); }
+
+.btn-quiet { background: transparent; padding: 0.5rem 0; color: var(--muted); }
+.btn-quiet:hover:not(:disabled) { color: var(--text); }
+
+.btn-sm { padding: 0.6rem 1.05rem; font-size: 0.82rem; }
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-soft);
+}
+
+.card-soft {
+  background: var(--surface-soft);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  border-radius: 999px;
+  padding: 0.3rem 0.72rem;
+  font-size: 0.7rem;
+  letter-spacing: 0.06em;
+  font-weight: 500;
+  border: 1px solid var(--border-strong);
+  color: var(--muted);
+  background: rgba(255, 255, 255, 0.7);
+  white-space: nowrap;
+}
+.badge-verified {
+  color: #1d5c46;
+  border-color: rgba(29, 92, 70, 0.28);
+  background: rgba(29, 92, 70, 0.08);
+}
+.badge-demo {
+  color: #7a5a2e;
+  border-color: rgba(154, 104, 69, 0.35);
+  background: rgba(154, 104, 69, 0.1);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  font-size: 0.62rem;
+}
+
+.field {
+  width: 100%;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: 18px;
+  padding: 0.9rem 1.1rem;
+  transition: border-color 200ms var(--ease-soft), box-shadow 200ms var(--ease-soft);
+}
+.field:focus {
+  outline: none;
+  border-color: var(--secondary);
+  box-shadow: 0 0 0 4px rgba(47, 95, 115, 0.12);
+}
+.field::placeholder { color: var(--faint); }
+
+.divider { height: 1px; background: var(--border); border: 0; margin: 0; }
+
+/* ---------- Mise en page ---------- */
+
+.shell {
+  width: 100%;
+  max-width: 1280px;
+  margin-inline: auto;
+  padding-inline: clamp(1.15rem, 4vw, 2.5rem);
+}
+
+.section { padding-block: clamp(4rem, 9vw, 8.5rem); }
+.section-tight { padding-block: clamp(2.75rem, 6vw, 5rem); }
+
+/* ---------- Média éditorial ---------- */
+
+.frame {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-panel);
+  background: linear-gradient(155deg, #e4dccb, #cfc6b3 55%, #b9b4a2);
+  isolation: isolate;
+}
+.frame img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.frame::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(12, 24, 19, 0.62), rgba(12, 24, 19, 0.05) 55%, transparent);
+  pointer-events: none;
+}
+.frame-plain::after { display: none; }
+
+/* ---------- Accessibilité ---------- */
+
+.sr-only {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.skip-link {
+  position: absolute;
+  left: 1rem;
+  top: -5rem;
+  z-index: 200;
+  background: var(--primary);
+  color: #fff;
+  padding: 0.7rem 1.2rem;
+  border-radius: 0 0 14px 14px;
+  transition: top 180ms var(--ease-soft);
+}
+.skip-link:focus { top: 0; }
+
+/* La barre de navigation mobile réserve sa hauteur en bas de page. */
+@media (max-width: 899px) {
+  body { padding-bottom: 4.9rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}

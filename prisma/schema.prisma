@@ -1,0 +1,477 @@
+// ============================================================
+// Algeria Health & Wellness — schéma de données
+//
+// Ce schéma décrit la cible de persistance. Le MVP actuel tourne sans
+// base : les données de démonstration vivent dans /data et les types
+// applicatifs dans /types/domain.ts. Ce fichier est la carte de la suite,
+// pas une dépendance du démarrage.
+//
+// Choix structurants :
+//   - les données de santé sont isolées dans leurs propres tables, avec
+//     un consentement explicite et daté pour chaque usage ;
+//   - tout accès à un document produit une ligne d'audit ;
+//   - un partage porte toujours une échéance : il n'existe pas d'accès
+//     perpétuel dans ce modèle.
+// ============================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------- Identité
+
+enum UserRole {
+  PATIENT
+  PROFESSIONAL
+  FACILITY_ADMIN
+  CONCIERGE
+  ADMIN
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  emailVerified DateTime?
+  role          UserRole  @default(PATIENT)
+  locale        String    @default("fr")
+  // Authentification déléguée : aucun mot de passe n'est stocké en clair,
+  // et le second facteur est exigé pour les rôles à privilèges.
+  twoFactorEnabled Boolean @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  patientProfile PatientProfile?
+  professional   Professional?
+  consents       Consent[]
+  conversations  Conversation[]
+  notifications  Notification[]
+  auditEntries   AuditLog[]
+
+  @@index([role])
+}
+
+model PatientProfile {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  firstName   String
+  lastName    String
+  birthDate   DateTime?
+  countryCode String?
+  languages   String[]
+  // Renseignés volontairement par la personne, jamais déduits.
+  allergies   String[]
+  history     String[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  journeys  Journey[]
+  documents Document[]
+  bookings  Booking[]
+  reviews   Review[]
+}
+
+// ------------------------------------------------------- Offre et territoire
+
+model Destination {
+  id         String  @id @default(cuid())
+  slug       String  @unique
+  name       String
+  wilayaCode String
+  region     String
+  tagline    String
+  intro      String
+  longitude  Float
+  latitude   Float
+  editorial  Json
+
+  facilities Facility[]
+  services   Service[]
+}
+
+enum FacilityKind {
+  CLINIQUE
+  HOPITAL
+  DENTAIRE
+  REEDUCATION
+  THERMAL
+  SPA
+  FORME
+  LABORATOIRE
+  IMAGERIE
+  NUTRITION
+  HEBERGEMENT
+}
+
+enum VerificationStatus {
+  VERIFIE
+  EN_COURS
+  DECLARATIF
+}
+
+/// Établissements de soin ET de bien-être : une seule table, discriminée par
+/// `kind`. Les séparer dupliquerait adresse, langues, accessibilité et
+/// vérification sans bénéfice.
+model Facility {
+  id                   String             @id @default(cuid())
+  slug                 String             @unique
+  name                 String
+  kind                 FacilityKind
+  destinationId        String
+  destination          Destination        @relation(fields: [destinationId], references: [id])
+  summary              String
+  languages            String[]
+  services             String[]
+  accessibility        String[]
+  internationalPatients Boolean           @default(false)
+  priceTier            Int                @default(2)
+  verificationStatus   VerificationStatus @default(DECLARATIF)
+  verificationChecks   String[]
+  verifiedAt           DateTime?
+  isDemo               Boolean            @default(false)
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+
+  professionals  Professional[]
+  specialties    Specialty[]
+  services_      Service[]
+  availabilities Availability[]
+  quotes         Quote[]
+  bookings       Booking[]
+  reviews        Review[]
+  partner        Partner?       @relation(fields: [partnerId], references: [id])
+  partnerId      String?
+
+  @@index([kind, destinationId])
+  @@index([verificationStatus])
+}
+
+model Professional {
+  id                   String             @id @default(cuid())
+  slug                 String             @unique
+  userId               String?            @unique
+  user                 User?              @relation(fields: [userId], references: [id])
+  facilityId           String
+  facility             Facility           @relation(fields: [facilityId], references: [id])
+  displayName          String
+  specialty            String
+  languages            String[]
+  experienceYears      Int?
+  acceptsSecondOpinion Boolean            @default(false)
+  acceptsInternational Boolean            @default(false)
+  verificationStatus   VerificationStatus @default(DECLARATIF)
+  verificationChecks   String[]
+  verifiedAt           DateTime?
+  isDemo               Boolean            @default(false)
+
+  appointments Appointment[]
+
+  @@index([facilityId])
+}
+
+model Specialty {
+  id         String     @id @default(cuid())
+  label      String     @unique
+  facilities Facility[]
+}
+
+model Service {
+  id            String       @id @default(cuid())
+  label         String
+  category      String
+  description   String?
+  facilityId    String?
+  facility      Facility?    @relation(fields: [facilityId], references: [id])
+  destinationId String?
+  destination   Destination? @relation(fields: [destinationId], references: [id])
+}
+
+model Availability {
+  id         String   @id @default(cuid())
+  facilityId String
+  facility   Facility @relation(fields: [facilityId], references: [id], onDelete: Cascade)
+  startsAt   DateTime
+  endsAt     DateTime
+  capacity   Int      @default(1)
+  // Une disponibilité n'est affichée que si la source est datée et fiable.
+  sourcedAt  DateTime
+
+  appointments Appointment[]
+
+  @@index([facilityId, startsAt])
+}
+
+// ------------------------------------------------------------------ Parcours
+
+enum JourneyPhase {
+  DISCOVER
+  ASSESS
+  PLAN
+  BOOK
+  EXPERIENCE
+  FOLLOW_UP
+}
+
+model Journey {
+  id           String         @id @default(cuid())
+  patientId    String
+  patient      PatientProfile @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  title        String
+  summary      String
+  brief        Json
+  phase        JourneyPhase   @default(DISCOVER)
+  startsOn     DateTime?
+  endsOn       DateTime?
+  /// Traçabilité : `REGLES` ou `LLM`. Un parcours doit rester auditable.
+  generatedBy  String         @default("REGLES")
+  disclaimer   String
+  cautions     String[]
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  steps           JourneyStep[]
+  appointments    Appointment[]
+  quotes          Quote[]
+  recommendations Recommendation[]
+  bookings        Booking[]
+
+  @@index([patientId, phase])
+}
+
+model JourneyStep {
+  id         String   @id @default(cuid())
+  journeyId  String
+  journey    Journey  @relation(fields: [journeyId], references: [id], onDelete: Cascade)
+  day        Int
+  time       String
+  kind       String
+  title      String
+  detail     String
+  intensity  String
+  facilityId String?
+
+  @@index([journeyId, day])
+}
+
+model Recommendation {
+  id         String   @id @default(cuid())
+  journeyId  String
+  journey    Journey  @relation(fields: [journeyId], references: [id], onDelete: Cascade)
+  facilityId String
+  score      Int
+  /// Les motifs affichés à l'utilisateur. Un score sans motifs ne s'affiche pas.
+  reasons    Json
+  createdAt  DateTime @default(now())
+
+  @@index([journeyId])
+}
+
+model Appointment {
+  id             String        @id @default(cuid())
+  journeyId      String
+  journey        Journey       @relation(fields: [journeyId], references: [id], onDelete: Cascade)
+  professionalId String?
+  professional   Professional? @relation(fields: [professionalId], references: [id])
+  availabilityId String?
+  availability   Availability? @relation(fields: [availabilityId], references: [id])
+  scheduledAt    DateTime
+  status         String        @default("REQUESTED")
+  note           String?
+
+  @@index([journeyId, scheduledAt])
+}
+
+// -------------------------------------------------------------- Documents
+
+enum DocumentCategory {
+  ANALYSES
+  IMAGERIE
+  ORDONNANCES
+  COMPTES_RENDUS
+  FACTURES
+  ADMINISTRATIF
+}
+
+model Document {
+  id            String           @id @default(cuid())
+  patientId     String
+  patient       PatientProfile   @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  name          String
+  category      DocumentCategory
+  sizeBytes     Int
+  /// Clé de l'objet chiffré. Le contenu ne transite jamais par cette table.
+  storageKey    String
+  checksum      String
+  /// Signalement de forme émis par l'organiseur documentaire.
+  /// Ne contient jamais d'interprétation médicale.
+  needsAttention String?
+  createdAt     DateTime         @default(now())
+
+  shares DocumentShare[]
+
+  @@index([patientId, category])
+}
+
+model DocumentShare {
+  id            String    @id @default(cuid())
+  documentId    String
+  document      Document  @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  recipientKind String
+  recipientId   String
+  recipientName String
+  grantedAt     DateTime  @default(now())
+  /// Obligatoire : le modèle interdit un partage sans échéance.
+  expiresAt     DateTime
+  revokedAt     DateTime?
+
+  @@index([documentId])
+  @@index([expiresAt])
+}
+
+model Consent {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  purpose   String
+  version   String
+  grantedAt DateTime  @default(now())
+  revokedAt DateTime?
+
+  @@index([userId, purpose])
+}
+
+// ---------------------------------------------------------- Échanges et flux
+
+model Conversation {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  channel   String   @default("CONCIERGE")
+  createdAt DateTime @default(now())
+
+  messages ConversationMessage[]
+}
+
+model ConversationMessage {
+  id             String       @id @default(cuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  role           String
+  content        String
+  /// Motifs déclenchés par le filtre de sortie, s'il y en a eu.
+  guardrailFlags String[]
+  createdAt      DateTime     @default(now())
+
+  @@index([conversationId, createdAt])
+}
+
+model Quote {
+  id         String   @id @default(cuid())
+  journeyId  String
+  journey    Journey  @relation(fields: [journeyId], references: [id], onDelete: Cascade)
+  facilityId String?
+  facility   Facility? @relation(fields: [facilityId], references: [id])
+  currency   String   @default("DZD")
+  lines      Json
+  totalMin   Int
+  totalMax   Int
+  /// `ESTIMATION` par défaut. `CONFIRME` uniquement avec un devis professionnel signé.
+  kind       String   @default("ESTIMATION")
+  issuedAt   DateTime @default(now())
+  expiresAt  DateTime?
+
+  bookings Booking[]
+}
+
+model Booking {
+  id         String   @id @default(cuid())
+  journeyId  String
+  journey    Journey  @relation(fields: [journeyId], references: [id])
+  patientId  String
+  patient    PatientProfile @relation(fields: [patientId], references: [id])
+  facilityId String
+  facility   Facility @relation(fields: [facilityId], references: [id])
+  quoteId    String?
+  quote      Quote?   @relation(fields: [quoteId], references: [id])
+  status     String   @default("REQUESTED")
+  createdAt  DateTime @default(now())
+
+  payments Payment[]
+
+  @@index([patientId, status])
+}
+
+model Payment {
+  id        String   @id @default(cuid())
+  bookingId String
+  booking   Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  amount    Int
+  currency  String   @default("DZD")
+  status    String   @default("PENDING")
+  provider  String
+  reference String?
+  createdAt DateTime @default(now())
+
+  @@index([bookingId])
+}
+
+model Review {
+  id         String   @id @default(cuid())
+  patientId  String
+  patient    PatientProfile @relation(fields: [patientId], references: [id])
+  facilityId String
+  facility   Facility @relation(fields: [facilityId], references: [id])
+  /// Notation structurée : accueil, communication, ponctualité, organisation,
+  /// confort, clarté, accompagnement. Jamais d'appréciation sur l'acte médical.
+  criteria   Json
+  comment    String?
+  published  Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  @@index([facilityId, published])
+}
+
+model Partner {
+  id         String     @id @default(cuid())
+  name       String
+  kind       String
+  contact    String?
+  contractedAt DateTime?
+  facilities Facility[]
+}
+
+model Notification {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  channel   String
+  subject   String
+  body      String
+  sentAt    DateTime?
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId, readAt])
+}
+
+/// Journal d'audit. Alimenté par tout accès documentaire et toute action
+/// sensible. En production, cette table doit être en append-only.
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id])
+  actorLabel String
+  action    String
+  target    String
+  detail    String
+  ipHash    String?
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@index([action])
+}
