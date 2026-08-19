@@ -9,3 +9,9 @@ dist/
 .DS_Store
 .vercel
 /data/runtime/
+
+# Médias bruts déposés pour tri.
+# 183 Mo de vidéos dans l'historique Git le gonfleraient définitivement — un
+# dépôt ne se dégonfle pas. Les vidéos validées iront sur un hébergeur de
+# médias (Vercel Blob, Cloudinary), pas ici.
+/public/videos/
