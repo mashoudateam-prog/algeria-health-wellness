@@ -10,9 +10,14 @@ import type { NextConfig } from "next";
  * déjà de la valeur : elle empêche tout chargement et toute exfiltration vers
  * un domaine tiers, ce qui est la menace principale sur une plateforme santé.
  */
+const isDev = process.env.NODE_ENV === "development";
+
 const CSP = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline'",
+  // `'unsafe-eval'` est indispensable au rafraîchissement à chaud de Next et
+  // reste strictement cantonné au développement : la politique servie en
+  // production ne l'inclut pas.
+  `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""}`,
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob:",
   "font-src 'self' data:",
