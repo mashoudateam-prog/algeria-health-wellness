@@ -46,6 +46,8 @@ déterministe et sur les données de démonstration de `/data`.
 | Health Passport           | `/espace/documents`       | Partage temporaire révocable + journal d'accès      |
 | Concierge santé           | `/concierge`              | Conversationnel, avec bascule conseiller humain     |
 | Centre de confiance       | `/confiance`              | Données, vérification, limites de l'IA              |
+| **Fil d'actualité**       | `/actualites`             | Veille automatisée, validée avant publication        |
+| Modération du fil         | `/admin/actualites`       | File d'attente, état des sources, décisions          |
 
 ---
 
@@ -159,6 +161,49 @@ représentées. Photographie documentaire, lumière naturelle, architecture rée
 
 Titres en **Fraunces** (serif éditorial), interface en **Inter**. Transitions de 150 à
 320 ms, apparition au défilement de 14 px, `prefers-reduced-motion` respecté partout.
+
+---
+
+## Le fil d'actualité
+
+Un agent parcourt chaque jour cinq flux de presse algériens, une recherche web
+ciblée et les soumissions de partenaires, puis **propose**. Il ne publie jamais.
+
+```
+flux RSS + recherche web + formulaire partenaire
+        ↓
+filtres déterministes  →  écarté si : pas de source vérifiable · hors périmètre
+                          santé/bien-être · doublon · pertinence insuffisante
+        ↓
+file de modération  →  une personne relit et décide
+        ↓
+fil public, chaque élément portant sa source
+```
+
+Sur une plateforme de santé, publier automatiquement « nouveau centre ouvert à
+Tipaza » à partir d'un article mal lu coûte plus cher que ne rien publier. Le
+point de contrôle humain n'est donc pas une étape provisoire : c'est le cœur
+du dispositif.
+
+**Les réseaux sociaux ne sont pas surveillés.** Leurs conditions interdisent
+l'extraction automatisée, leurs API ne permettent pas la découverte, et
+republier des publications pose un problème de droits. Le formulaire partenaire
+remplit ce rôle avec des informations exactes à la source.
+
+**Rendement réel à connaître** : sur une collecte de 74 articles de presse, zéro
+a passé les filtres. C'est le comportement attendu — les flux suivis sont
+généralistes et parlent rarement de tourisme de santé. Le formulaire partenaire
+et la recherche web portent l'essentiel du volume.
+
+| Variable | Effet |
+| --- | --- |
+| `ADMIN_TOKEN` | Protège la modération. **Sans lui, l'administration est refusée en production.** |
+| `CRON_SECRET` | Signature des appels de la tâche planifiée Vercel |
+| `BRAVE_SEARCH_API_KEY` | Active le collecteur de recherche web (inactif sans clé) |
+
+La collecte quotidienne est déclarée dans `vercel.json` (6 h UTC). Les décisions
+de modération vivent en mémoire du processus : **elles ne survivront pas au
+prochain déploiement** tant que PostgreSQL n'est pas branché.
 
 ---
 

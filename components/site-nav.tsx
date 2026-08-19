@@ -9,6 +9,7 @@ const PRIMARY = [
   { href: "/destinations", label: "Destinations" },
   { href: "/carte", label: "Carte santé" },
   { href: "/sejours", label: "Séjours" },
+  { href: "/actualites", label: "Actualités" },
   { href: "/confiance", label: "Confiance" },
 ];
 
