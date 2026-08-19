@@ -19,7 +19,9 @@ const CSP = [
   // production ne l'inclut pas.
   `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""}`,
   "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data: blob:",
+  // Seule exception au cloisonnement : le CDN qui sert les photographies
+  // vérifiées de `data/photos.ts`. Aucune autre origine externe n'est admise.
+  "img-src 'self' data: blob: https://images.unsplash.com",
   "font-src 'self' data:",
   "connect-src 'self'",
   "form-action 'self'",

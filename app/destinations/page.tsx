@@ -42,7 +42,9 @@ export default function DestinationsPage() {
                 caption={destination.name}
                 overline={REGION_LABEL[destination.region]}
                 index={index + 1}
-                className="h-[22rem] lg:h-[27rem]"
+                scrim="bottom"
+                sizes="(max-width: 1024px) 100vw, 50vw"
+                className="h-[22rem] lg:h-[29rem]"
               />
 
               <div>

@@ -25,6 +25,34 @@ const PHASES = [
   { key: "Follow-up", label: "Je suis accompagné après", detail: "Documents, rappels, suivi à distance." },
 ];
 
+/** Bandeau éditorial : quatre visages du pays, du Sahara à la Méditerranée. */
+const GALLERY = [
+  {
+    slug: "sahara",
+    caption: "Le Tassili",
+    note: "Le Grand Sud, ses formations rocheuses et son silence.",
+    span: "sm:col-span-2 sm:row-span-2",
+    height: "h-[19rem] sm:h-full",
+    sizes: "(max-width: 640px) 100vw, 66vw",
+  },
+  {
+    slug: "constantine",
+    caption: "Constantine",
+    note: "La ville des ponts, suspendue au-dessus de ses gorges.",
+    span: "",
+    height: "h-[19rem]",
+    sizes: "(max-width: 640px) 100vw, 33vw",
+  },
+  {
+    slug: "ghardaia",
+    caption: "Le M'Zab",
+    note: "Cinq cités fortifiées, patrimoine mondial.",
+    span: "",
+    height: "h-[19rem]",
+    sizes: "(max-width: 640px) 100vw, 33vw",
+  },
+];
+
 const TRUST = [
   {
     icon: ShieldCheck,
@@ -47,57 +75,126 @@ export default function HomePage() {
   return (
     <>
       {/* ---------------------------------------------------------- HERO */}
-      <section className="shell grid items-center gap-12 pb-16 pt-12 lg:grid-cols-[0.95fr_1.05fr] lg:gap-16 lg:pb-24 lg:pt-16">
-        <Reveal>
-          <Eyebrow>Health travel · Algérie</Eyebrow>
+      <section className="relative">
+        <PhotoPlate
+          slug="hero-algerie"
+          alt="Le littoral algérien, entre montagne et Méditerranée"
+          caption="Algérie"
+          overline="Destination"
+          index={1}
+          priority
+          scrim="full"
+          focal="50% 42%"
+          sizes="100vw"
+          className="h-[min(88vh,940px)] rounded-none"
+        >
+          <div className="shell flex h-full flex-col justify-end pb-12 sm:pb-16">
+            <div className="max-w-3xl">
+              <p className="eyebrow eyebrow-line" style={{ color: "rgba(255,255,255,0.82)" }}>
+                Health travel · Algérie
+              </p>
 
-          <h1 className="mt-6 text-[clamp(2.6rem,6.2vw,4.6rem)]">
-            Prenez soin de vous.
-            <br />
-            <span style={{ color: "var(--sage, #7d927b)" }}>Découvrez l&apos;Algérie autrement.</span>
-          </h1>
+              <h1 className="mt-6 text-[clamp(2.7rem,7vw,5.4rem)] text-white">
+                Prenez soin de vous.
+                <br />
+                Découvrez l&apos;Algérie autrement.
+              </h1>
 
-          <p className="lede mt-7 max-w-xl">
-            Une nouvelle façon de préparer votre séjour de santé, de bien-être et de remise
-            en forme en Algérie. Vous ne réservez pas un rendez-vous : vous construisez un
-            parcours.
-          </p>
+              <p className="mt-7 max-w-xl text-[clamp(1rem,1.6vw,1.22rem)] leading-8 text-white/75">
+                Soins, bien-être et remise en forme, entre Méditerranée, hauts plateaux
+                et Sahara. Vous ne réservez pas un rendez-vous : vous construisez un
+                parcours.
+              </p>
 
-          <div className="mt-9 flex flex-wrap gap-3">
-            <Link href="/parcours" className="btn btn-primary group">
-              Construire mon parcours
-              <ArrowRight size={16} className="transition-transform group-hover:translate-x-0.5" />
-            </Link>
-            <Link href="/destinations" className="btn btn-ghost">
-              Explorer les destinations
-            </Link>
+              <div className="mt-9 flex flex-wrap gap-3">
+                <Link href="/parcours" className="btn btn-primary group">
+                  Construire mon parcours
+                  <ArrowRight size={16} className="transition-transform group-hover:translate-x-0.5" />
+                </Link>
+                <Link
+                  href="/destinations"
+                  className="btn"
+                  style={{
+                    background: "rgba(255,255,255,0.12)",
+                    borderColor: "rgba(255,255,255,0.32)",
+                    color: "#fff",
+                    backdropFilter: "blur(10px)",
+                  }}
+                >
+                  Explorer les destinations
+                </Link>
+              </div>
+            </div>
           </div>
+        </PhotoPlate>
 
-          <ol className="mt-12 grid max-w-lg grid-cols-3 gap-5 border-t pt-7" style={{ borderColor: "var(--border)" }}>
-            {["Vous définissez votre objectif", "Un parcours se construit", "Vous vivez votre séjour"].map(
-              (step, index) => (
-                <li key={step}>
-                  <span className="serif text-2xl" style={{ color: "var(--accent)" }}>
-                    {String(index + 1).padStart(2, "0")}
-                  </span>
-                  <p className="mt-1.5 text-[0.78rem] leading-5 muted">{step}</p>
-                </li>
-              ),
-            )}
+        {/* Les trois temps, en bandeau sous le visuel */}
+        <div style={{ background: "var(--surface-deep)", color: "#fff" }}>
+          <ol className="shell grid gap-6 py-8 sm:grid-cols-3">
+            {[
+              "Vous définissez votre objectif",
+              "Un parcours se construit",
+              "Vous vivez votre séjour",
+            ].map((step, index) => (
+              <li key={step} className="flex items-baseline gap-4">
+                <span className="serif text-2xl" style={{ color: "var(--terracotta-soft, #c08a63)" }}>
+                  {String(index + 1).padStart(2, "0")}
+                </span>
+                <p className="text-[0.92rem] leading-6 text-white/70">{step}</p>
+              </li>
+            ))}
           </ol>
-        </Reveal>
+        </div>
+      </section>
 
-        <Reveal delay={0.08}>
-          <PhotoPlate
-            slug="hero-algerie"
-            alt="Paysage algérien entre Méditerranée et patrimoine"
-            caption="Algérie"
-            overline="Destination"
-            index={1}
-            priority
-            className="h-[min(72vh,620px)]"
-          />
-        </Reveal>
+      {/* ---------------------------------------------- BANDEAU ÉDITORIAL */}
+      <section className="section">
+        <div className="shell">
+          <Reveal>
+            <div className="max-w-2xl">
+              <Eyebrow>Un pays de contrastes</Eyebrow>
+              <h2 className="mt-5 text-[clamp(2rem,4.4vw,3.2rem)]">
+                Le deuxième plus grand pays d&apos;Afrique.
+                <br />
+                <span style={{ color: "var(--sage, #7d927b)" }}>Et l&apos;un des moins parcourus.</span>
+              </h2>
+              <p className="mt-6 leading-7 muted">
+                Mille deux cents kilomètres de côte méditerranéenne, des massifs boisés,
+                des hauts plateaux, et un Sahara qui couvre plus de huit dixièmes du
+                territoire. C&apos;est le décor de votre séjour.
+              </p>
+            </div>
+          </Reveal>
+
+          <div className="mt-12 grid gap-4 sm:auto-rows-[19rem] sm:grid-cols-3">
+            {GALLERY.map((item, index) => (
+              <Reveal key={item.slug} delay={index * 0.06} className={item.span}>
+                <div className={`group relative h-full ${item.height}`}>
+                  <PhotoPlate
+                    slug={item.slug}
+                    alt={item.caption}
+                    caption={item.caption}
+                    overline="Algérie"
+                    index={index + 2}
+                    scrim="bottom"
+                    zoomOnHover
+                    sizes={item.sizes}
+                    className="h-full"
+                  >
+                    <div className="flex h-full flex-col justify-end p-6">
+                      <p className="serif text-[clamp(1.5rem,2.4vw,2.1rem)] leading-none text-white">
+                        {item.caption}
+                      </p>
+                      <p className="mt-2.5 max-w-xs text-[0.82rem] leading-5 text-white/70">
+                        {item.note}
+                      </p>
+                    </div>
+                  </PhotoPlate>
+                </div>
+              </Reveal>
+            ))}
+          </div>
+        </div>
       </section>
 
       {/* ------------------------------------------------- OBJECTIFS */}
@@ -151,7 +248,10 @@ export default function HomePage() {
             </p>
           </Reveal>
 
-          <ol className="mt-14 grid gap-px overflow-hidden rounded-[28px] sm:grid-cols-2 lg:grid-cols-3" style={{ background: "rgba(255,255,255,0.12)" }}>
+          <ol
+            className="mt-14 grid gap-px overflow-hidden rounded-[28px] sm:grid-cols-2 lg:grid-cols-3"
+            style={{ background: "rgba(255,255,255,0.12)" }}
+          >
             {PHASES.map((phase, index) => (
               <li key={phase.key} style={{ background: "var(--surface-deep)" }}>
                 <Reveal delay={index * 0.04} className="h-full p-7">
@@ -206,9 +306,21 @@ export default function HomePage() {
                     caption={destination.name}
                     overline={destination.tagline}
                     index={index + 1}
-                    className="h-[24rem] transition-transform duration-500 group-hover:-translate-y-1"
-                  />
-                  <p className="mt-3.5 text-[0.84rem] leading-6 muted">{destination.tagline}</p>
+                    scrim="bottom"
+                    zoomOnHover
+                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                    className="h-[27rem]"
+                  >
+                    <div className="flex h-full flex-col justify-end p-6">
+                      <p className="text-[0.6rem] uppercase tracking-[0.24em] text-white/65">
+                        {destination.tagline}
+                      </p>
+                      <p className="mt-2 serif text-[2rem] leading-none text-white">
+                        {destination.name}
+                      </p>
+                    </div>
+                  </PhotoPlate>
+                  <p className="mt-3.5 text-[0.84rem] leading-6 muted">{destination.intro.split(".")[0]}.</p>
                 </Link>
               </Reveal>
             ))}
@@ -291,7 +403,12 @@ export default function HomePage() {
                   const Icon = item.icon;
                   return (
                     <li key={item.text} className="card flex items-start gap-4 p-5">
-                      <Icon size={19} strokeWidth={1.6} className="mt-0.5 shrink-0" style={{ color: "var(--secondary)" }} />
+                      <Icon
+                        size={19}
+                        strokeWidth={1.6}
+                        className="mt-0.5 shrink-0"
+                        style={{ color: "var(--secondary)" }}
+                      />
                       <span className="text-[0.9rem] leading-6">{item.text}</span>
                     </li>
                   );

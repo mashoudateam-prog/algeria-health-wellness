@@ -56,32 +56,37 @@ export default async function DestinationPage({
 
   return (
     <>
-      <section className="shell grid items-end gap-10 pb-14 pt-10 lg:grid-cols-[1fr_1.1fr] lg:gap-14">
-        <div>
-          <Eyebrow>{REGION_LABEL[destination.region]}</Eyebrow>
-          <h1 className="mt-6 text-[clamp(2.4rem,6vw,4.2rem)]">{destination.name}</h1>
-          <p className="mt-4 text-[clamp(1.1rem,2.4vw,1.6rem)] leading-snug" style={{ color: "var(--sage, #7d927b)" }}>
+      <PhotoPlate
+        slug={destination.slug}
+        alt={destination.photo.alt}
+        caption={destination.name}
+        overline={destination.tagline}
+        priority
+        scrim="full"
+        sizes="100vw"
+        className="h-[min(72vh,720px)] rounded-none"
+      >
+        <div className="shell flex h-full flex-col justify-end pb-12">
+          <p className="eyebrow eyebrow-line" style={{ color: "rgba(255,255,255,0.82)" }}>
+            {REGION_LABEL[destination.region]}
+          </p>
+          <h1 className="mt-5 text-[clamp(2.6rem,7vw,5rem)] text-white">{destination.name}</h1>
+          <p className="mt-3 text-[clamp(1.05rem,2.2vw,1.6rem)] leading-snug text-white/75">
             {destination.tagline}
           </p>
-          <p className="mt-7 max-w-xl leading-8 muted">{destination.intro}</p>
-
-          <ul className="mt-7 flex flex-wrap gap-2">
-            {destination.bestFor.map((entry) => (
-              <li key={entry} className="badge">
-                {entry}
-              </li>
-            ))}
-          </ul>
         </div>
+      </PhotoPlate>
 
-        <PhotoPlate
-          slug={destination.slug}
-          alt={destination.photo.alt}
-          caption={destination.name}
-          overline={destination.tagline}
-          priority
-          className="h-[26rem] lg:h-[32rem]"
-        />
+      <section className="shell grid gap-10 pb-14 pt-12 lg:grid-cols-[1.3fr_0.7fr] lg:gap-16">
+        <p className="text-[clamp(1.02rem,1.7vw,1.28rem)] leading-8 muted">{destination.intro}</p>
+
+        <ul className="flex h-fit flex-wrap gap-2">
+          {destination.bestFor.map((entry) => (
+            <li key={entry} className="badge">
+              {entry}
+            </li>
+          ))}
+        </ul>
       </section>
 
       {/* Spécialités */}
