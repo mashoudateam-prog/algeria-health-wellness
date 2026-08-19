@@ -21,6 +21,7 @@ export type GoalId =
   | "prevention"
   | "mental"
   | "sport"
+  | "entrainement"
   | "avis"
   | "sejour";
 
@@ -104,6 +105,7 @@ export type FacilityKind =
   | "thermal"
   | "spa"
   | "forme"
+  | "salle"
   | "laboratoire"
   | "imagerie"
   | "nutrition"

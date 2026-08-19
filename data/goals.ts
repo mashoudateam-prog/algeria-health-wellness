@@ -139,6 +139,23 @@ export const GOALS: HealthGoal[] = [
     requiresProfessional: false,
   },
   {
+    id: "entrainement",
+    label: "M'entraîner",
+    short: "Garder mon rythme sportif pendant le séjour",
+    emoji: "🏋️",
+    family: "forme",
+    keywords: [
+      "m'entrainer", "mentrainer", "entrainer", "entrainement", "salle de sport", "salle",
+      "musculation", "muscu", "gym", "fitness", "crossfit", "haltere", "halteres",
+      "cardio", "tapis de course", "piscine", "natation", "nager", "footing", "courir",
+      "course a pied", "velo", "yoga", "pilates", "boxe", "arts martiaux",
+      "continuer mon sport", "garder mon rythme", "ne pas perdre ma forme",
+      "programme d'entrainement", "coach", "preparateur physique",
+    ],
+    facilityKinds: ["salle", "forme", "reeducation"],
+    requiresProfessional: false,
+  },
+  {
     id: "avis",
     label: "Demander un avis",
     short: "Second avis sur un dossier existant",

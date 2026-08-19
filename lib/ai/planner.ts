@@ -1,5 +1,6 @@
 import { DESTINATIONS, DESTINATION_BY_SLUG } from "@/data/destinations";
 import { FACILITY_BY_ID } from "@/data/facilities";
+import { heritageNear } from "@/data/heritage";
 import { GOAL_BY_ID } from "@/data/goals";
 import { evaluateCompatibility } from "@/lib/rules/compatibility";
 import type {
@@ -434,22 +435,67 @@ export function buildJourneyFromBrief(brief: JourneyBrief): JourneyPlan {
     }
   }
 
-  /* --- Découverte --------------------------------------------------- */
-  const activities = destination.editorial.activites;
-  let activityIndex = 0;
-  for (let day = 2; day < total && activityIndex < activities.length; day++) {
+  /* --- Entraînement --------------------------------------------------- */
+  // Distinct de la remise en forme : la personne a déjà un rythme et veut le
+  // tenir. On vise donc la régularité, pas une progression encadrée.
+  if (brief.goals.includes("entrainement")) {
+    const facilityId = facilityFor(["salle", "forme"]);
+    let cursor = 2;
+
+    while (cursor <= lastLeisureDay) {
+      const day = scheduler.findLightDay(cursor, {
+        avoidCareWindow: medicalGoals.length > 0 || brief.flags.hasRecovery,
+        maxDay: lastLeisureDay,
+      });
+      if (day === null) break;
+
+      scheduler.place({
+        day,
+        kind: "activite",
+        title: "Séance libre en salle",
+        detail:
+          "Accès à la salle sur votre créneau habituel. Signalez à l'avance si vous souhaitez un coach : cela conditionne les horaires disponibles.",
+        intensity: "moderee",
+        facilityId,
+      });
+      // Un jour sur deux : de quoi tenir son rythme sans saturer le séjour.
+      cursor = day + 2;
+    }
+  }
+
+  /* --- Découverte du patrimoine --------------------------------------- */
+  // Des sites réels rattachés à la destination, et non une liste générique.
+  // Pendant une récupération, marches soutenues et longs trajets sont écartés.
+  const heritage = heritageNear(destination.slug).filter((site) => {
+    if (!brief.flags.hasRecovery) return true;
+    return site.effort !== "marche-soutenue" && site.distanceKm <= 80;
+  });
+
+  let heritageIndex = 0;
+  for (let day = 2; day < total && heritageIndex < heritage.length; day++) {
     if (scheduler.load(day) >= 2) continue;
     if (scheduler.careDays.has(day)) continue;
     if (brief.flags.hasRecovery && scheduler.withinCareWindow(day)) continue;
+
+    const site = heritage[heritageIndex];
+    // Une journée entière de site lointain ne se glisse pas entre deux actes.
+    if (site.hours > 6 && medicalGoals.length > 0) {
+      heritageIndex++;
+      continue;
+    }
+
+    const distance = site.distanceKm > 0 ? `À environ ${site.distanceKm} km. ` : "";
+    const unesco = site.kind === "unesco" ? `Patrimoine mondial depuis ${site.inscribedIn}. ` : "";
+
     scheduler.place({
       day,
       kind: "activite",
-      title: activities[activityIndex],
-      detail: "Découverte à rythme libre, compatible avec la charge de la journée.",
-      intensity: brief.flags.hasRecovery ? "repos" : "douce",
+      title: site.name,
+      detail: `${unesco}${site.summary.split(".")[0]}. ${distance}Compter ${site.hours} h sur place.`,
+      intensity: site.effort === "marche-soutenue" ? "moderee" : "douce",
       preferAfternoon: true,
     });
-    activityIndex++;
+    heritageIndex++;
   }
 
   /* --- Départ -------------------------------------------------------- */
