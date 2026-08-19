@@ -7,6 +7,7 @@ import { usePathname } from "next/navigation";
 const PRIMARY = [
   { href: "/parcours", label: "Mon parcours" },
   { href: "/destinations", label: "Destinations" },
+  { href: "/patrimoine", label: "Patrimoine" },
   { href: "/carte", label: "Carte santé" },
   { href: "/sejours", label: "Séjours" },
   { href: "/actualites", label: "Actualités" },

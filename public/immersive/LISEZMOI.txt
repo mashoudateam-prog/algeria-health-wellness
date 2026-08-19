@@ -1,0 +1,9 @@
+Déposez ici vos médias immersifs.
+
+  <slug>-360.jpg      panorama équirectangulaire (rapport 2:1)
+  <slug>.mp4          vidéo
+  <slug>-poster.jpg   affiche de la vidéo
+  <slug>.glb          modèle 3D (export Luma AI, Polycam, photogrammétrie)
+
+Les slugs correspondent à ceux de data/heritage.ts, par exemple :
+  tipasa-360.jpg, casbah-alger.mp4, timgad.glb
