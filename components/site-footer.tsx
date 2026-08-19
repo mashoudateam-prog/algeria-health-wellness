@@ -7,7 +7,10 @@ const COLUMNS = [
     links: [
       { href: "/parcours", label: "Construire mon parcours" },
       { href: "/destinations", label: "Destinations santé" },
+      { href: "/univers", label: "Univers de séjour" },
+      { href: "/patrimoine", label: "Patrimoine" },
       { href: "/carte", label: "Carte santé de l'Algérie" },
+      { href: "/actualites", label: "Actualités" },
       { href: "/sejours", label: "Séjours bien-être" },
     ],
   },

@@ -56,9 +56,12 @@ const STEP_TONE: Record<StepKind, string> = {
 export function JourneyBuilder({
   initialText = "",
   initialGoals = [],
+  initialDestination = "",
 }: {
   initialText?: string;
   initialGoals?: GoalId[];
+  /** Destination imposée par la page d'origine, à honorer dès la première construction. */
+  initialDestination?: string;
 }) {
   const reduced = useReducedMotion();
 
@@ -68,7 +71,7 @@ export function JourneyBuilder({
   const [travellers, setTravellers] = useState(1);
   const [origin, setOrigin] = useState<Origin>("algerie");
   const [budgetTier, setBudgetTier] = useState<1 | 2 | 3>(2);
-  const [destinationSlug, setDestinationSlug] = useState("");
+  const [destinationSlug, setDestinationSlug] = useState(initialDestination);
 
   /**
    * Tant que la personne n'a pas touché aux réglages, ils ne sont pas envoyés :
@@ -120,6 +123,9 @@ export function JourneyBuilder({
         body: JSON.stringify({
           text,
           goals,
+          // Une destination reçue en paramètre est envoyée d'emblée : elle vient
+          // d'une page qui l'a annoncée au visiteur.
+          ...(initialDestination && !optionsTouched ? { destinationSlug: initialDestination } : {}),
           ...(optionsTouched
             ? {
                 durationDays: days,
@@ -158,7 +164,7 @@ export function JourneyBuilder({
       setError(caught instanceof Error ? caught.message : "Génération impossible.");
       setStatus("error");
     }
-  }, [text, goals, days, travellers, origin, budgetTier, destinationSlug, optionsTouched, reduced]);
+  }, [text, goals, days, travellers, origin, budgetTier, destinationSlug, optionsTouched, initialDestination, reduced]);
 
   // Un parcours pré-rempli depuis la page d'accueil se construit tout seul.
   const autoRan = useRef(false);
