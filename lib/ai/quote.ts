@@ -1,5 +1,6 @@
 import type { GoalId, JourneyBrief, Quote, QuoteLine } from "@/types/domain";
-import { QUOTE_DISCLAIMER } from "./guardrails";
+import { notices } from "./guardrails";
+import { plannerText, type PlannerLocale, type PlannerText } from "./text";
 
 /**
  * Smart Quote — estimation transparente, jamais un prix.
@@ -50,7 +51,8 @@ const CONCIERGE: Record<1 | 2 | 3, Band> = {
   3: { min: 24_000, max: 46_000 },
 };
 
-export function estimateQuote(brief: JourneyBrief): Quote {
+export function estimateQuote(brief: JourneyBrief, locale: PlannerLocale = "fr"): Quote {
+  const tx = plannerText(locale).quote;
   const lines: QuoteLine[] = [];
   const { durationDays, travellers, budgetTier } = brief;
   const nights = Math.max(1, durationDays - 1);
@@ -60,18 +62,18 @@ export function estimateQuote(brief: JourneyBrief): Quote {
     const band = CARE_BANDS[goal];
     if (!band) continue;
     lines.push({
-      label: careLabel(goal),
+      label: careLabel(goal, tx),
       category: goal === "avis" ? "honoraires" : "soins",
       min: band.min,
       max: band.max,
-      note: "Fourchette large : le montant dépend du bilan initial et de l'acte retenu.",
+      note: tx.careNote,
     });
   }
 
   /* Examens -------------------------------------------------------- */
   if (brief.goals.some((g) => ["prevention", "soins", "dentaire"].includes(g))) {
     lines.push({
-      label: "Examens et imagerie",
+      label: tx.exams,
       category: "examens",
       min: 8_000,
       max: 34_000,
@@ -86,7 +88,7 @@ export function estimateQuote(brief: JourneyBrief): Quote {
     // Les séances ne remplissent pas tous les jours du séjour.
     const activeDays = Math.max(2, Math.round(durationDays * 0.55));
     lines.push({
-      label: `${careLabel(goal)} · ${activeDays} jours`,
+      label: tx.perDay(careLabel(goal, tx), activeDays),
       category: "options",
       min: band.min * activeDays,
       max: band.max * activeDays,
@@ -97,7 +99,7 @@ export function estimateQuote(brief: JourneyBrief): Quote {
   const lodging = LODGING_PER_NIGHT[budgetTier];
   const rooms = Math.ceil(travellers / 2);
   lines.push({
-    label: `Hébergement · ${nights} nuits${rooms > 1 ? ` · ${rooms} chambres` : ""}`,
+    label: tx.lodging(nights, rooms),
     category: "hebergement",
     min: lodging.min * nights * rooms,
     max: lodging.max * nights * rooms,
@@ -105,13 +107,13 @@ export function estimateQuote(brief: JourneyBrief): Quote {
 
   /* Transport -------------------------------------------------------- */
   lines.push({
-    label: "Transferts et déplacements locaux",
+    label: tx.transfers,
     category: "transport",
     min: 2_500 * durationDays,
     max: 6_000 * durationDays,
     note:
       brief.origin === "etranger"
-        ? "Hors billet d'avion international, qui reste à votre charge et hors plateforme."
+        ? tx.flightNote
         : undefined,
   });
 
@@ -119,11 +121,11 @@ export function estimateQuote(brief: JourneyBrief): Quote {
   const concierge = CONCIERGE[budgetTier];
   if (concierge.max > 0) {
     lines.push({
-      label: "Conciergerie et coordination",
+      label: tx.concierge,
       category: "conciergerie",
       min: concierge.min,
       max: concierge.max,
-      note: "Prise de rendez-vous, interprète, accompagnement pendant le séjour.",
+      note: tx.conciergeNote,
     });
   }
 
@@ -136,25 +138,12 @@ export function estimateQuote(brief: JourneyBrief): Quote {
     totalMin,
     totalMax,
     kind: "estimation",
-    disclaimer: QUOTE_DISCLAIMER,
+    disclaimer: notices(locale).quote,
   };
 }
 
-function careLabel(goal: GoalId): string {
-  const labels: Partial<Record<GoalId, string>> = {
-    prevention: "Bilan de santé",
-    soins: "Consultations spécialisées",
-    dentaire: "Soins dentaires",
-    esthetique: "Médecine esthétique",
-    avis: "Second avis sur dossier",
-    thermalisme: "Cure thermale de détente",
-    detente: "Spa et détente",
-    forme: "Programme remise en forme",
-    sport: "Récupération et kinésithérapie",
-    nutrition: "Accompagnement nutritionnel",
-    mental: "Bien-être mental",
-  };
-  return labels[goal] ?? "Prestation";
+function careLabel(goal: GoalId, tx: PlannerText["quote"]): string {
+  return tx.care[goal] ?? tx.fallbackCare;
 }
 
 /** Formatage monétaire homogène dans toute l'application. */

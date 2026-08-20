@@ -12,10 +12,12 @@ import type {
   JourneyStep,
   StepKind,
 } from "@/types/domain";
-import { MEDICAL_DISCLAIMER } from "./guardrails";
+import { notices } from "./guardrails";
 import { classifyIntent } from "./intent";
 import { matchFacilities } from "./matching";
 import { estimateQuote } from "./quote";
+import { localizedDestination, localizedGoal, localizedHeritage } from "@/lib/i18n/content";
+import { plannerText, type PlannerLocale, type PlannerText } from "./text";
 
 /**
  * JourneyPlanner — construit un parcours jour par jour à partir d'une intention.
@@ -144,109 +146,39 @@ function pickDestination(brief: JourneyBrief): Destination {
 /* Trames de soin par objectif                                         */
 /* ------------------------------------------------------------------ */
 
-interface CareTemplate {
+interface CareShape {
   offset: number;
   kind: StepKind;
-  title: string;
-  detail: string;
   intensity: Intensity;
 }
 
-const CARE_TEMPLATES: Partial<Record<GoalId, CareTemplate[]>> = {
+/**
+ * Structure des actes par objectif : quand, de quelle nature, à quelle
+ * intensité. Les titres et consignes vivent dans `text.ts`, pour que la
+ * même trame serve toutes les langues.
+ */
+const CARE_SHAPES: Partial<Record<GoalId, CareShape[]>> = {
   prevention: [
-    {
-      offset: 0,
-      kind: "examen",
-      title: "Bilan de santé — prélèvements",
-      detail: "Prélèvements à jeun en début de matinée, puis matinée libre. Comptez une heure sur place.",
-      intensity: "repos",
-    },
-    {
-      offset: 2,
-      kind: "soin",
-      title: "Restitution du bilan avec le médecin",
-      detail:
-        "Le médecin vous remet et commente vos résultats. Préparez vos questions en amont : le concierge peut vous aider à les formuler.",
-      intensity: "repos",
-    },
+    { offset: 0, kind: "examen", intensity: "repos" },
+    { offset: 2, kind: "soin", intensity: "repos" },
   ],
   soins: [
-    {
-      offset: 0,
-      kind: "soin",
-      title: "Consultation spécialisée",
-      detail: "Premier échange avec le praticien. Apportez vos documents médicaux via votre Health Passport.",
-      intensity: "repos",
-    },
-    {
-      offset: 1,
-      kind: "examen",
-      title: "Examens complémentaires",
-      detail: "Réalisés seulement s'ils sont prescrits lors de la consultation. Créneau réservé par précaution.",
-      intensity: "repos",
-    },
-    {
-      offset: 3,
-      kind: "soin",
-      title: "Consultation de synthèse",
-      detail: "Reprise des résultats et définition de la suite avec le praticien.",
-      intensity: "repos",
-    },
+    { offset: 0, kind: "soin", intensity: "repos" },
+    { offset: 1, kind: "examen", intensity: "repos" },
+    { offset: 3, kind: "soin", intensity: "repos" },
   ],
   dentaire: [
-    {
-      offset: 0,
-      kind: "soin",
-      title: "Consultation dentaire et plan de traitement",
-      detail: "Examen, radiographie si nécessaire, et devis écrit avant tout acte.",
-      intensity: "repos",
-    },
-    {
-      offset: 2,
-      kind: "soin",
-      title: "Première séance de soins",
-      detail: "Séance principale du séjour. Prévoyez une fin de journée calme.",
-      intensity: "repos",
-    },
-    {
-      offset: 4,
-      kind: "soin",
-      title: "Seconde séance et contrôle",
-      detail: "Finalisation et vérification. Un compte rendu vous est remis pour votre suivi au retour.",
-      intensity: "repos",
-    },
+    { offset: 0, kind: "soin", intensity: "repos" },
+    { offset: 2, kind: "soin", intensity: "repos" },
+    { offset: 4, kind: "soin", intensity: "repos" },
   ],
   esthetique: [
-    {
-      offset: 0,
-      kind: "soin",
-      title: "Consultation dermatologique",
-      detail: "Évaluation, explication des options et délai de réflexion avant toute décision.",
-      intensity: "repos",
-    },
-    {
-      offset: 2,
-      kind: "soin",
-      title: "Séance programmée",
-      detail: "Réalisée uniquement après accord écrit et délai de réflexion respecté.",
-      intensity: "repos",
-    },
+    { offset: 0, kind: "soin", intensity: "repos" },
+    { offset: 2, kind: "soin", intensity: "repos" },
   ],
   avis: [
-    {
-      offset: 0,
-      kind: "logistique",
-      title: "Dépôt du dossier pour second avis",
-      detail: "Vérification des pièces avec le coordinateur, puis transmission au professionnel habilité.",
-      intensity: "repos",
-    },
-    {
-      offset: 3,
-      kind: "soin",
-      title: "Restitution du second avis",
-      detail: "Entretien avec le professionnel et synthèse écrite remise à l'issue.",
-      intensity: "repos",
-    },
+    { offset: 0, kind: "logistique", intensity: "repos" },
+    { offset: 3, kind: "soin", intensity: "repos" },
   ],
 };
 
@@ -254,9 +186,14 @@ const CARE_TEMPLATES: Partial<Record<GoalId, CareTemplate[]>> = {
 /* Construction du parcours                                            */
 /* ------------------------------------------------------------------ */
 
-export function buildJourneyFromBrief(brief: JourneyBrief): JourneyPlan {
-  const destination = pickDestination(brief);
-  const matches = matchFacilities(brief, { destinationSlug: destination.slug, limit: 6 });
+export function buildJourneyFromBrief(
+  brief: JourneyBrief,
+  locale: PlannerLocale = "fr",
+): JourneyPlan {
+  const tx = plannerText(locale);
+  // Le choix reste fait sur les données sources ; seul l'affichage est traduit.
+  const destination = localizedDestination(pickDestination(brief), locale);
+  const matches = matchFacilities(brief, { destinationSlug: destination.slug, limit: 6, locale });
   const total = brief.durationDays;
   // Le jour du départ est réservé au bilan et au transfert : aucune séance de
   // confort ne peut y être placée.
@@ -273,11 +210,9 @@ export function buildJourneyFromBrief(brief: JourneyBrief): JourneyPlan {
   scheduler.place({
     day: 1,
     kind: "logistique",
-    title: brief.origin === "etranger" ? "Arrivée et transfert" : "Arrivée et installation",
+    title: brief.origin === "etranger" ? tx.arrivalAbroad.title : tx.arrivalLocal.title,
     detail:
-      brief.origin === "etranger"
-        ? `Accueil à l'arrivée et transfert vers votre hébergement à ${destination.name}. Aucun rendez-vous n'est programmé ce jour.`
-        : `Installation à ${destination.name} et prise de repères. Journée volontairement libre.`,
+      brief.origin === "etranger" ? tx.arrivalAbroad.detail : tx.arrivalLocal.detail,
     intensity: "repos",
     facilityId: facilityFor(["hebergement"]),
   });
@@ -286,7 +221,7 @@ export function buildJourneyFromBrief(brief: JourneyBrief): JourneyPlan {
     scheduler.place({
       day: 1,
       kind: "repos",
-      title: "Fin de journée libre",
+      title: tx.eveningFree,
       detail: destination.editorial.recuperation.split(".")[0] + ".",
       intensity: "repos",
       preferAfternoon: true,
@@ -294,21 +229,22 @@ export function buildJourneyFromBrief(brief: JourneyBrief): JourneyPlan {
   }
 
   /* --- Actes médicaux --------------------------------------------- */
-  const medicalGoals = brief.goals.filter((goal) => CARE_TEMPLATES[goal]);
+  const medicalGoals = brief.goals.filter((goal) => CARE_SHAPES[goal]);
   let anchor = 2;
 
   for (const goal of medicalGoals) {
-    const template = CARE_TEMPLATES[goal]!;
+    const shapes = CARE_SHAPES[goal]!;
+    const texts = tx.care[goal] ?? [];
     const kinds = GOAL_BY_ID.get(goal)?.facilityKinds ?? [];
-    for (const entry of template) {
+    for (const [index, entry] of shapes.entries()) {
       const day = anchor + entry.offset;
       // Un acte ne se programme jamais le jour du départ.
       if (day >= total && total > 2) continue;
       scheduler.place({
         day,
         kind: entry.kind,
-        title: entry.title,
-        detail: entry.detail,
+        title: texts[index]?.title ?? "",
+        detail: texts[index]?.detail ?? "",
         intensity: entry.intensity,
         facilityId: facilityFor(kinds as string[]),
       });
@@ -324,9 +260,8 @@ export function buildJourneyFromBrief(brief: JourneyBrief): JourneyPlan {
     scheduler.place({
       day: next,
       kind: "recuperation",
-      title: "Journée de récupération",
-      detail:
-        "Rythme volontairement allégé au lendemain d'un acte : marche courte, repos et hydratation. Ajustez selon les consignes de votre praticien.",
+      title: tx.recoveryDay.title,
+      detail: tx.recoveryDay.detail,
       intensity: "repos",
     });
   }
@@ -334,38 +269,17 @@ export function buildJourneyFromBrief(brief: JourneyBrief): JourneyPlan {
   /* --- Remise en forme et sport ------------------------------------ */
   if (brief.goals.some((g) => g === "forme" || g === "sport")) {
     const facilityId = facilityFor(["forme", "reeducation"]);
-    const ramp: Array<{ title: string; detail: string; intensity: Intensity }> = [
-      {
-        title: "Évaluation de condition physique",
-        detail: "Point de départ mesuré : mobilité, endurance, force. Sert de référence pour la progression du séjour.",
-        intensity: "douce",
-      },
-      {
-        title: "Séance encadrée — reprise douce",
-        detail: "Mobilité et cardio léger, sans recherche de performance.",
-        intensity: "douce",
-      },
-      {
-        title: "Séance encadrée — renforcement",
-        detail: "Montée progressive de la charge, adaptée à l'évaluation initiale.",
-        intensity: "moderee",
-      },
-      {
-        title: "Séance encadrée — séance longue",
-        detail: "Séance la plus soutenue du séjour, placée après plusieurs jours d'adaptation.",
-        intensity: "soutenue",
-      },
-      {
-        title: "Séance bilan et plan de suite",
-        detail: "Comparaison avec l'évaluation initiale et programme écrit à poursuivre au retour.",
-        intensity: "douce",
-      },
-    ];
+    const ramp = tx.fitness;
 
     let cursor = 2;
-    for (const session of ramp) {
+    for (const [index, session] of ramp.entries()) {
       const avoid = session.intensity !== "douce";
-      const day = scheduler.findLightDay(cursor, { avoidCareWindow: avoid, maxDay: lastLeisureDay });
+      // La dernière séance porte le bilan et le programme écrit à poursuivre
+      // au retour : c'est le livrable du séjour. Si l'espacement habituel la
+      // repousse au-delà du départ, on la rapproche plutôt que de la perdre.
+      const last = index === ramp.length - 1;
+      const from = last ? Math.min(cursor, lastLeisureDay) : cursor;
+      const day = scheduler.findLightDay(from, { avoidCareWindow: avoid, maxDay: lastLeisureDay });
       if (day === null || day >= total) break;
       scheduler.place({
         day,
@@ -395,11 +309,8 @@ export function buildJourneyFromBrief(brief: JourneyBrief): JourneyPlan {
       scheduler.place({
         day,
         kind: "bien-etre",
-        title: index === 0 ? "Séance thermale et détente" : "Récupération en spa",
-        detail:
-          medicalGoals.length > 0
-            ? "Programmée en seconde partie de séjour. L'accès aux bains chauds après un acte doit être validé par votre praticien."
-            : "Bains, chaleur sèche et temps de repos. Prévoyez de ne rien planifier après la séance.",
+        title: index === 0 ? tx.wellnessFirst : tx.wellnessNext,
+        detail: medicalGoals.length > 0 ? tx.wellnessWithCare : tx.wellnessAlone,
         intensity: "repos",
         facilityId,
         preferAfternoon: true,
@@ -416,8 +327,8 @@ export function buildJourneyFromBrief(brief: JourneyBrief): JourneyPlan {
       scheduler.place({
         day: first,
         kind: "nutrition",
-        title: "Consultation nutrition",
-        detail: "Bilan alimentaire et construction d'un plan réaliste, compatible avec la cuisine locale.",
+        title: tx.nutritionFirst.title,
+        detail: tx.nutritionFirst.detail,
         intensity: "repos",
         facilityId,
       });
@@ -427,8 +338,8 @@ export function buildJourneyFromBrief(brief: JourneyBrief): JourneyPlan {
       scheduler.place({
         day: follow,
         kind: "nutrition",
-        title: "Point nutrition et plan de suite",
-        detail: "Ajustement du plan et remise du document à poursuivre après le séjour.",
+        title: tx.nutritionFollow.title,
+        detail: tx.nutritionFollow.detail,
         intensity: "repos",
         facilityId,
       });
@@ -452,9 +363,8 @@ export function buildJourneyFromBrief(brief: JourneyBrief): JourneyPlan {
       scheduler.place({
         day,
         kind: "activite",
-        title: "Séance libre en salle",
-        detail:
-          "Accès à la salle sur votre créneau habituel. Signalez à l'avance si vous souhaitez un coach : cela conditionne les horaires disponibles.",
+        title: tx.training.title,
+        detail: tx.training.detail,
         intensity: "moderee",
         facilityId,
       });
@@ -477,21 +387,22 @@ export function buildJourneyFromBrief(brief: JourneyBrief): JourneyPlan {
     if (scheduler.careDays.has(day)) continue;
     if (brief.flags.hasRecovery && scheduler.withinCareWindow(day)) continue;
 
-    const site = heritage[heritageIndex];
+    const site = localizedHeritage(heritage[heritageIndex], locale);
     // Une journée entière de site lointain ne se glisse pas entre deux actes.
     if (site.hours > 6 && medicalGoals.length > 0) {
       heritageIndex++;
       continue;
     }
 
-    const distance = site.distanceKm > 0 ? `À environ ${site.distanceKm} km. ` : "";
-    const unesco = site.kind === "unesco" ? `Patrimoine mondial depuis ${site.inscribedIn}. ` : "";
+    const distance = site.distanceKm > 0 ? tx.heritageDistance(site.distanceKm) : "";
+    const unesco =
+      site.kind === "unesco" && site.inscribedIn ? tx.heritageUnesco(site.inscribedIn) : "";
 
     scheduler.place({
       day,
       kind: "activite",
       title: site.name,
-      detail: `${unesco}${site.summary.split(".")[0]}. ${distance}Compter ${site.hours} h sur place.`,
+      detail: `${unesco}${site.summary.split(".")[0]}. ${distance}${tx.heritageHours(site.hours)}`,
       intensity: site.effort === "marche-soutenue" ? "moderee" : "douce",
       preferAfternoon: true,
     });
@@ -503,102 +414,93 @@ export function buildJourneyFromBrief(brief: JourneyBrief): JourneyPlan {
     scheduler.place({
       day: total,
       kind: "logistique",
-      title: "Bilan de séjour et départ",
-      detail:
-        "Récupération des comptes rendus, point avec votre coordinateur et transfert. Votre suivi se poursuit dans votre espace après le retour.",
+      title: tx.departure.title,
+      detail: tx.departure.detail,
       intensity: "repos",
     });
   }
 
   /* --- Assemblage ----------------------------------------------------- */
   const steps = scheduler.steps.sort((a, b) => a.day - b.day || a.time.localeCompare(b.time));
-  const cautions = evaluateCompatibility({ brief, destination, steps });
-  const quote = estimateQuote(brief);
+  const cautions = evaluateCompatibility({ brief, destination, steps }, locale);
+  const quote = estimateQuote(brief, locale);
 
   return {
     id: `journey-${Date.now().toString(36)}`,
     createdAt: new Date().toISOString(),
     brief,
-    title: buildTitle(brief, destination),
-    summary: buildSummary(brief, destination, steps),
+    title: buildTitle(brief, destination, tx, locale),
+    summary: buildSummary(brief, destination, steps, tx, locale),
     destination,
     steps,
     matches,
     quote,
     cautions: cautions.map((caution) => caution.message),
-    nextActions: buildNextActions(brief),
-    disclaimer: MEDICAL_DISCLAIMER,
+    nextActions: buildNextActions(brief, tx),
+    disclaimer: notices(locale).medical,
     generatedBy: "regles",
   };
 }
 
-export function buildJourney(rawText: string): JourneyPlan {
-  return buildJourneyFromBrief(classifyIntent(rawText).brief);
+export function buildJourney(rawText: string, locale: PlannerLocale = "fr"): JourneyPlan {
+  return buildJourneyFromBrief(classifyIntent(rawText, locale).brief, locale);
 }
 
 /* ------------------------------------------------------------------ */
 
-function buildTitle(brief: JourneyBrief, destination: Destination): string {
-  const days = brief.durationDays;
-  const primary = GOAL_BY_ID.get(brief.goals[0])?.label.toLowerCase() ?? "santé";
-  const cleaned = primary.replace(/^me /, "").replace(/^demander un /, "");
-  return `${days} jour${days > 1 ? "s" : ""} à ${destination.name} — ${cleaned}`;
+function buildTitle(
+  brief: JourneyBrief,
+  destination: Destination,
+  tx: PlannerText,
+  locale: PlannerLocale,
+): string {
+  const goal = GOAL_BY_ID.get(brief.goals[0]);
+  const label = goal ? localizedGoal(goal, locale).label.toLowerCase() : "";
+  // « Me remettre en forme » se lit mal après un tiret : on retire l'amorce.
+  const cleaned = label.replace(/^me /, "").replace(/^demander un /, "") || tx.fallbackGoal;
+  return tx.title(brief.durationDays, destination.name, cleaned);
 }
 
-function buildSummary(brief: JourneyBrief, destination: Destination, steps: JourneyStep[]): string {
+function buildSummary(
+  brief: JourneyBrief,
+  destination: Destination,
+  steps: JourneyStep[],
+  tx: PlannerText,
+  locale: PlannerLocale,
+): string {
   const careCount = steps.filter((s) => s.kind === "soin" || s.kind === "examen").length;
   const restCount = steps.filter((s) => s.kind === "recuperation" || s.kind === "repos").length;
-  const goals = brief.goals.map((g) => GOAL_BY_ID.get(g)?.label.toLowerCase() ?? g);
+  const goals = brief.goals.map((id) => {
+    const goal = GOAL_BY_ID.get(id);
+    return goal ? localizedGoal(goal, locale).label.toLowerCase() : id;
+  });
 
   const goalsText =
     goals.length === 1
       ? goals[0]
-      : `${goals.slice(0, -1).join(", ")} et ${goals[goals.length - 1]}`;
+      : `${goals.slice(0, -1).join(", ")} ${tx.and} ${goals[goals.length - 1]}`;
 
-  const parts = [
-    `Un parcours de ${brief.durationDays} jours à ${destination.name}, construit autour de ${goalsText}.`,
-  ];
-
-  if (careCount > 0) {
-    parts.push(
-      `${careCount} rendez-vous de soin ou d'examen, ${restCount} temps de repos identifiés, et des journées de découverte placées là où la charge le permet.`,
-    );
-  } else {
-    parts.push(
-      `Aucun acte médical programmé : le séjour est organisé autour du rythme, du repos et de l'activité douce.`,
-    );
-  }
-
-  if (brief.travellers > 1) {
-    parts.push(`Calendrier, hébergement et transports partagés pour ${brief.travellers} voyageurs.`);
-  }
+  const parts = [tx.summaryLead(brief.durationDays, destination.name, goalsText)];
+  parts.push(careCount > 0 ? tx.summaryCare(careCount, restCount) : tx.summaryNoCare);
+  if (brief.travellers > 1) parts.push(tx.summaryTravellers(brief.travellers));
 
   return parts.join(" ");
 }
 
-function buildNextActions(brief: JourneyBrief): string[] {
+function buildNextActions(brief: JourneyBrief, tx: PlannerText): string[] {
   const actions: string[] = [];
 
-  if (brief.flags.needsProfessionalOpinion) {
-    actions.push("Faire valider les actes envisagés par un professionnel de santé habilité.");
-  }
-  actions.push("Compléter votre Health Passport pour que les praticiens disposent du contexte utile.");
-  if (brief.origin === "etranger") {
-    actions.push("Vérifier vos documents de voyage et la couverture d'assurance pour la durée du séjour.");
-  }
-  actions.push("Demander une estimation détaillée aux établissements retenus.");
-  actions.push("Échanger avec un conseiller si un point reste flou — un humain reste joignable.");
+  if (brief.flags.needsProfessionalOpinion) actions.push(tx.nextActions.professional);
+  actions.push(tx.nextActions.passport);
+  if (brief.origin === "etranger") actions.push(tx.nextActions.documents);
+  actions.push(tx.nextActions.estimate);
+  actions.push(tx.nextActions.adviser);
 
   return actions;
 }
 
-export const STEP_KIND_LABEL: Record<StepKind, string> = {
-  soin: "Soin",
-  examen: "Examen",
-  recuperation: "Récupération",
-  "bien-etre": "Bien-être",
-  activite: "Activité",
-  nutrition: "Nutrition",
-  logistique: "Logistique",
-  repos: "Repos",
-};
+/** Libellé de catégorie dans la langue du visiteur. */
+export function stepKindLabel(kind: StepKind, locale: PlannerLocale = "fr"): string {
+  return plannerText(locale).stepKinds[kind];
+}
+

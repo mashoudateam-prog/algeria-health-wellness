@@ -1,6 +1,9 @@
 import { FACILITIES } from "@/data/facilities";
 import { GOAL_BY_ID } from "@/data/goals";
+import { LOCALE_TAG } from "@/lib/i18n/config";
+import { localizedFacility, localizedGoal, localizedTerms } from "@/lib/i18n/content";
 import type { Facility, FacilityMatch, JourneyBrief, MatchReason } from "@/types/domain";
+import { plannerText, type PlannerLocale } from "./text";
 
 /**
  * Smart Match — moteur de recommandation explicable.
@@ -29,13 +32,16 @@ export interface MatchOptions {
   limit?: number;
   /** Exige au moins une correspondance avec un objectif du brief. */
   requireGoalMatch?: boolean;
+  /** Langue des justifications affichées. */
+  locale?: PlannerLocale;
 }
 
 export function matchFacilities(
   brief: JourneyBrief,
   options: MatchOptions = {},
 ): FacilityMatch[] {
-  const { destinationSlug, limit = 6, requireGoalMatch = true } = options;
+  const { destinationSlug, limit = 6, requireGoalMatch = true, locale = "fr" } = options;
+  const tx = plannerText(locale).match;
 
   const wantedKinds = new Set(
     brief.goals.flatMap((goalId) => GOAL_BY_ID.get(goalId)?.facilityKinds ?? []),
@@ -44,6 +50,7 @@ export function matchFacilities(
   const results: FacilityMatch[] = [];
 
   for (const facility of FACILITIES) {
+    const shown = localizedFacility(facility, locale);
     const reasons: MatchReason[] = [];
     let score = 0;
 
@@ -55,10 +62,10 @@ export function matchFacilities(
         .map((id) => GOAL_BY_ID.get(id))
         .find((g) => g?.facilityKinds.includes(facility.kind));
       reasons.push({
-        label: "Correspond à votre objectif",
+        label: tx.goal,
         detail: goal
-          ? `${goal.label} — ${facility.specialties.slice(0, 3).join(", ")}`
-          : facility.specialties.slice(0, 3).join(", "),
+          ? `${localizedGoal(goal, locale).label} — ${shown.specialties.slice(0, 3).join(", ")}`
+          : shown.specialties.slice(0, 3).join(", "),
       });
     } else if (requireGoalMatch) {
       continue;
@@ -69,8 +76,8 @@ export function matchFacilities(
     if (targetDestination && facility.destinationSlug === targetDestination) {
       score += WEIGHTS.destination;
       reasons.push({
-        label: "Sur place",
-        detail: "Situé dans la destination retenue pour votre parcours, sans trajet interurbain.",
+        label: tx.onSite,
+        detail: tx.onSiteDetail,
       });
     } else if (targetDestination) {
       continue;
@@ -81,8 +88,8 @@ export function matchFacilities(
     if (sharedLanguages.length > 0) {
       score += WEIGHTS.language;
       reasons.push({
-        label: "Langue d'échange",
-        detail: `Accueil déclaré en ${sharedLanguages.join(" et ")}.`,
+        label: tx.language,
+        detail: tx.languageDetail(joinList(localizedTerms(sharedLanguages, locale), locale)),
       });
     }
 
@@ -90,15 +97,18 @@ export function matchFacilities(
     if (brief.origin === "etranger") {
       if (facility.internationalPatients) {
         score += WEIGHTS.international;
-        const relevant = facility.services.filter((service) =>
-          /navette|interpr|coordination|distance|planification/i.test(service),
-        );
+        // Le filtre reconnaît des mots français : il s'applique à la source,
+        // et l'index retenu sert ensuite à lire la version traduite.
+        const relevant = facility.services
+          .map((service, index) => ({ service, index }))
+          .filter(({ service }) => /navette|interpr|coordination|distance|planification/i.test(service))
+          .map(({ index }) => shown.services[index] ?? facility.services[index]);
         reasons.push({
-          label: "Habitué aux patients venant de l'étranger",
+          label: tx.international,
           detail:
             relevant.length > 0
               ? relevant.slice(0, 2).join(" · ")
-              : "Prise en charge des séjours programmés depuis l'étranger.",
+              : tx.internationalDetail,
         });
       } else {
         score -= 14;
@@ -110,10 +120,8 @@ export function matchFacilities(
     if (gap === 0) {
       score += WEIGHTS.budget;
       reasons.push({
-        label: "Cohérent avec votre niveau de confort",
-        detail: ["", "Positionnement essentiel", "Positionnement confort", "Positionnement premium"][
-          facility.priceTier
-        ],
+        label: tx.budget,
+        detail: tx.budgetTiers[facility.priceTier],
       });
     } else if (gap === 1) {
       score += 4;
@@ -125,15 +133,16 @@ export function matchFacilities(
     if (facility.verification.status === "verifie") {
       score += WEIGHTS.verification;
       reasons.push({
-        label: "Informations vérifiées",
-        detail: `${facility.verification.checks.slice(0, 3).join(", ")} — contrôlé le ${formatDate(
-          facility.verification.checkedAt,
-        )}.`,
+        label: tx.verified,
+        detail: tx.verifiedDetail(
+          shown.verification.checks.slice(0, 3).join(", "),
+          formatDate(facility.verification.checkedAt, locale, tx.unknownDate),
+        ),
       });
     } else {
       reasons.push({
-        label: "Informations déclaratives",
-        detail: "Fiche renseignée par l'établissement, pas encore contrôlée par la plateforme.",
+        label: tx.declared,
+        detail: tx.declaredDetail,
       });
     }
 
@@ -146,8 +155,8 @@ export function matchFacilities(
     if (brief.flags.hasRecovery && /reeducation|spa|thermal|hebergement/.test(facility.kind)) {
       score += 8;
       reasons.push({
-        label: "Utile à votre phase de récupération",
-        detail: "Peut s'intégrer après un acte, une fois le rythme validé par votre praticien.",
+        label: tx.recovery,
+        detail: tx.recoveryDetail,
       });
     }
 
@@ -189,8 +198,19 @@ export function filterFacilities(filters: {
   });
 }
 
-function formatDate(iso: string | null): string {
-  if (!iso) return "date inconnue";
+function formatDate(iso: string | null, locale: PlannerLocale, unknown: string): string {
+  if (!iso) return unknown;
   const date = new Date(iso);
-  return date.toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
+  return date.toLocaleDateString(LOCALE_TAG[locale], {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+}
+
+/** « a, b et c » en français, « a, b and c » en anglais. */
+function joinList(items: string[], locale: PlannerLocale): string {
+  if (items.length < 2) return items.join("");
+  const last = items[items.length - 1];
+  return `${items.slice(0, -1).join(", ")} ${plannerText(locale).and} ${last}`;
 }
