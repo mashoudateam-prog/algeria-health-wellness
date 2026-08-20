@@ -1,21 +1,31 @@
 import { timingSafeEqual } from "node:crypto";
 import type { NextRequest } from "next/server";
+import type { Account } from "@/lib/auth/accounts";
+import { requireRole } from "@/lib/auth/session";
 
 /**
  * Accès aux points d'entrée d'administration.
  *
- * Un jeton partagé, en attendant une vraie authentification. C'est modeste,
- * et c'est écrit ici pour que personne ne s'y trompe : ce n'est PAS un
- * substitut à l'authentification et au contrôle de rôles à construire.
+ * Deux chemins, dans cet ordre :
  *
- * Deux garanties tout de même : comparaison à temps constant, et refus par
- * défaut en production quand aucun jeton n'est configuré. Un secret absent ne
- * doit jamais se traduire par une porte ouverte.
+ *   1. une session ouverte dont le rôle atteint « modérateur » — c'est la voie
+ *      humaine, et celle qui trace qui a décidé quoi ;
+ *   2. le jeton partagé, réservé à ce qui n'a pas de session : la tâche
+ *      planifiée, un script d'exploitation.
+ *
+ * Le jeton reste comparé à temps constant, et son absence en production
+ * continue de fermer la porte plutôt que de l'ouvrir.
  */
 
-export type AuthOutcome = { ok: true } | { ok: false; reason: string; status: number };
+export type AuthOutcome =
+  | { ok: true; account?: Account }
+  | { ok: false; reason: string; status: number };
 
-export function authorizeAdmin(request: NextRequest): AuthOutcome {
+export async function authorizeAdmin(request: NextRequest): Promise<AuthOutcome> {
+  // La session prime : elle dit qui agit, là où un jeton ne dit rien.
+  const account = await requireRole("moderateur");
+  if (account) return { ok: true, account };
+
   const expected = process.env.ADMIN_TOKEN;
 
   if (!expected) {
@@ -55,7 +65,7 @@ function constantTimeEquals(a: string, b: string): boolean {
  * en plus du jeton d'administration, pour que la collecte planifiée fonctionne
  * sans partager le jeton humain avec l'ordonnanceur.
  */
-export function authorizeCron(request: NextRequest): AuthOutcome {
+export async function authorizeCron(request: NextRequest): Promise<AuthOutcome> {
   const cronSecret = process.env.CRON_SECRET;
   if (cronSecret) {
     const header = request.headers.get("authorization") ?? "";

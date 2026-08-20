@@ -18,6 +18,7 @@ export const fr = {
     trust: "Confiance",
     concierge: "Concierge",
     profile: "Profil",
+    account: "Compte",
     explore: "Explorer",
     start: "Commencer",
     adviser: "Un conseiller",
@@ -283,6 +284,10 @@ export const fr = {
       title: "Mon espace",
       description:
         "Votre parcours, vos rendez-vous, vos documents et votre budget, réunis en un seul endroit.",
+    },
+    account: {
+      title: "Mon compte",
+      description: "Connexion, création de compte et rôles sur la plateforme.",
     },
     passport: {
       title: "Health Passport",
@@ -557,6 +562,45 @@ export const fr = {
     declaredTitle: "Informations déclarées par l’établissement, non contrôlées",
     checkedOn: (date: string) => `Contrôlé le ${date}`,
     unknownDate: "date inconnue",
+  },
+
+  accountPage: {
+    eyebrow: "Votre compte",
+    title: "Un compte, un rôle, des droits qui en découlent",
+    lede:
+      "L’accès à la modération ne repose plus sur un jeton partagé mais sur une personne identifiée. Le jeton reste, réservé à ce qui n’a pas de session : la tâche planifiée, un script d’exploitation.",
+    rolesTitle: "Les quatre rôles",
+    roleDetails: {
+      visiteur: "Construit ses parcours, gère son espace et ses documents.",
+      partenaire: "En plus : tient à jour les fiches de son établissement.",
+      moderateur: "En plus : décide de ce qui paraît dans le fil d’actualité.",
+      admin: "En plus : crée des comptes et attribue les rôles.",
+    },
+    persistent: "Base connectée : les comptes et les sessions survivent au redéploiement.",
+    volatile:
+      "Aucune base configurée : les comptes vivent en mémoire du processus et disparaîtront au redémarrage. Renseignez DATABASE_URL pour les conserver.",
+  },
+
+  account: {
+    loading: "Chargement…",
+    signIn: "Se connecter",
+    signUp: "Créer un compte",
+    signOut: "Se déconnecter",
+    displayName: "Nom affiché",
+    email: "Adresse e-mail",
+    password: "Mot de passe",
+    passwordHint: "Au moins dix caractères. Il n’est jamais stocké en clair.",
+    pending: "En cours…",
+    failed: "L’opération a échoué. Réessayez.",
+    canDo: "Ce que ce compte permet",
+    notice:
+      "Le premier compte créé administre la plateforme. Les suivants sont des visiteurs, et un administrateur peut les promouvoir.",
+    roles: {
+      visiteur: "Visiteur",
+      partenaire: "Partenaire",
+      moderateur: "Modérateur",
+      admin: "Administrateur",
+    },
   },
 
   chat: {

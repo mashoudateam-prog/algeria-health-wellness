@@ -30,7 +30,7 @@ async function handle(request: NextRequest) {
     );
   }
 
-  const auth = authorizeCron(request);
+  const auth = await authorizeCron(request);
   if (!auth.ok) {
     return NextResponse.json({ error: auth.reason }, { status: auth.status });
   }

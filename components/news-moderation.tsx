@@ -110,7 +110,9 @@ export function NewsModeration() {
     <div>
       <div className="card flex flex-wrap items-end gap-4 p-5">
         <label className="min-w-[16rem] flex-1">
-          <span className="block text-[0.82rem] font-medium">Jeton d&apos;administration</span>
+          <span className="block text-[0.82rem] font-medium">
+            Jeton d&apos;administration <em className="faint">— facultatif si connecté</em>
+          </span>
           <input
             type="password"
             value={token}

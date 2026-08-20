@@ -34,7 +34,7 @@ export function SiteNav() {
     { href: "/destinations", label: t.nav.explore, icon: Compass },
     { href: "/parcours", label: t.nav.journey, icon: Route },
     { href: "/concierge", label: t.nav.concierge, icon: MessageCircle },
-    { href: "/espace", label: t.nav.profile, icon: User },
+    { href: "/compte", label: t.nav.account, icon: User },
   ];
 
   return (

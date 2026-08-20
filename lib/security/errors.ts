@@ -40,6 +40,10 @@ export interface ApiErrors {
   badDateFormat: string;
   duplicateLink: string;
   unknownDecision: string;
+
+  badCredentials: string;
+  accountExists: string;
+  accountFailed: string;
 }
 
 const FR: ApiErrors = {
@@ -71,6 +75,10 @@ const FR: ApiErrors = {
   badDateFormat: "La date doit être au format AAAA-MM-JJ.",
   duplicateLink: "Ce lien a déjà été soumis.",
   unknownDecision: "Décision non reconnue.",
+
+  badCredentials: "Adresse ou mot de passe incorrect.",
+  accountExists: "Un compte existe déjà pour cette adresse.",
+  accountFailed: "L'opération sur le compte a échoué. Réessayez.",
 };
 
 const EN: ApiErrors = {
@@ -102,6 +110,10 @@ const EN: ApiErrors = {
   badDateFormat: "The date must be in YYYY-MM-DD format.",
   duplicateLink: "This link has already been submitted.",
   unknownDecision: "Unrecognised decision.",
+
+  badCredentials: "Incorrect email address or password.",
+  accountExists: "An account already exists for this address.",
+  accountFailed: "The account operation failed. Please try again.",
 };
 
 const TABLE: Partial<Record<Locale, ApiErrors>> = { fr: FR, en: EN };

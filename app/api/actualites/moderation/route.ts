@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
   const throttled = throttle(request);
   if (throttled) return throttled;
 
-  const auth = authorizeAdmin(request);
+  const auth = await authorizeAdmin(request);
   if (!auth.ok) return NextResponse.json({ error: auth.reason }, { status: auth.status });
 
   const [proposes, publies, rejetes, dernierPassage] = await Promise.all([
@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
   const throttled = throttle(request);
   if (throttled) return throttled;
 
-  const auth = authorizeAdmin(request);
+  const auth = await authorizeAdmin(request);
   if (!auth.ok) return NextResponse.json({ error: auth.reason }, { status: auth.status });
 
   try {

@@ -23,6 +23,7 @@ export const en: Dictionary = {
     trust: "Trust",
     concierge: "Concierge",
     profile: "Profile",
+    account: "Account",
     explore: "Explore",
     start: "Get started",
     adviser: "An adviser",
@@ -281,6 +282,10 @@ export const en: Dictionary = {
       title: "My space",
       description:
         "Your journey, your appointments, your documents and your budget, gathered in one place.",
+    },
+    account: {
+      title: "My account",
+      description: "Sign in, create an account, and roles on the platform.",
     },
     passport: {
       title: "Health Passport",
@@ -554,6 +559,45 @@ export const en: Dictionary = {
     declaredTitle: "Information declared by the facility, not checked",
     checkedOn: (date) => `Checked on ${date}`,
     unknownDate: "date unknown",
+  },
+
+  accountPage: {
+    eyebrow: "Your account",
+    title: "One account, one role, and the rights that follow",
+    lede:
+      "Access to moderation no longer rests on a shared token but on an identified person. The token remains, reserved for what has no session: the scheduled task, an operations script.",
+    rolesTitle: "The four roles",
+    roleDetails: {
+      visiteur: "Builds journeys, manages their space and documents.",
+      partenaire: "Also: keeps their facility’s listings up to date.",
+      moderateur: "Also: decides what appears in the news feed.",
+      admin: "Also: creates accounts and assigns roles.",
+    },
+    persistent: "Database connected: accounts and sessions survive a redeployment.",
+    volatile:
+      "No database configured: accounts live in process memory and will disappear on restart. Set DATABASE_URL to keep them.",
+  },
+
+  account: {
+    loading: "Loading…",
+    signIn: "Sign in",
+    signUp: "Create an account",
+    signOut: "Sign out",
+    displayName: "Display name",
+    email: "Email address",
+    password: "Password",
+    passwordHint: "At least ten characters. It is never stored in plain text.",
+    pending: "Working…",
+    failed: "The operation failed. Please try again.",
+    canDo: "What this account allows",
+    notice:
+      "The first account created administers the platform. Later ones are visitors, and an administrator can promote them.",
+    roles: {
+      visiteur: "Visitor",
+      partenaire: "Partner",
+      moderateur: "Moderator",
+      admin: "Administrator",
+    },
   },
 
   chat: {
