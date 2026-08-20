@@ -2,6 +2,7 @@
 
 import { Pause, Play, Volume2, VolumeX } from "lucide-react";
 import { useRef, useState } from "react";
+import { useTranslation } from "@/components/i18n-provider";
 
 /**
  * Lecteur vidéo.
@@ -27,6 +28,7 @@ export function VideoFrame({
   /** Piste de sous-titres WebVTT, vivement recommandée. */
   captions?: string;
 }) {
+  const { t } = useTranslation();
   const videoRef = useRef<HTMLVideoElement>(null);
   const [playing, setPlaying] = useState(false);
   const [muted, setMuted] = useState(true);
@@ -64,14 +66,14 @@ export function VideoFrame({
         onEnded={() => setPlaying(false)}
         className="h-full w-full object-cover"
       >
-        {captions && <track kind="captions" src={captions} srcLang="fr" label="Français" default />}
+        {captions && <track kind="captions" src={captions} srcLang="fr" label={t.video.captionsLabel} default />}
       </video>
 
       {!playing && (
         <button
           type="button"
           onClick={toggle}
-          aria-label={`Lire la vidéo : ${label}`}
+          aria-label={t.video.play(label)}
           className="absolute inset-0 flex items-center justify-center transition-colors hover:bg-black/10"
         >
           <span
@@ -88,7 +90,7 @@ export function VideoFrame({
           <button
             type="button"
             onClick={toggle}
-            aria-label="Mettre en pause"
+            aria-label={t.video.pause}
             className="flex h-8 w-8 items-center justify-center rounded-full text-white backdrop-blur-md"
             style={{ background: "rgba(10,22,18,0.5)" }}
           >
@@ -98,7 +100,7 @@ export function VideoFrame({
         <button
           type="button"
           onClick={toggleSound}
-          aria-label={muted ? "Activer le son" : "Couper le son"}
+          aria-label={muted ? t.video.unmute : t.video.mute}
           className="flex h-8 w-8 items-center justify-center rounded-full text-white backdrop-blur-md"
           style={{ background: "rgba(10,22,18,0.5)" }}
         >

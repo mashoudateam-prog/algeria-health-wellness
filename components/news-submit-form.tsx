@@ -3,9 +3,17 @@
 import { CheckCircle2, Send } from "lucide-react";
 import { useState } from "react";
 import { WILAYAS } from "@/data/geo";
-import { NEWS_CATEGORY_LABEL, type NewsCategory } from "@/types/news";
+import { useTranslation } from "@/components/i18n-provider";
+import type { NewsCategory } from "@/types/news";
 
-const CATEGORIES = Object.keys(NEWS_CATEGORY_LABEL) as NewsCategory[];
+const CATEGORIES: NewsCategory[] = [
+  "evenement",
+  "ouverture",
+  "promotion",
+  "festival",
+  "gastronomie",
+  "cure",
+];
 
 /**
  * Formulaire partenaire.
@@ -18,6 +26,7 @@ const CATEGORIES = Object.keys(NEWS_CATEGORY_LABEL) as NewsCategory[];
  * directement sur la plateforme.
  */
 export function NewsSubmitForm() {
+  const { t } = useTranslation();
   const [sent, setSent] = useState(false);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
@@ -46,10 +55,10 @@ export function NewsSubmitForm() {
       });
 
       const payload = await response.json();
-      if (!response.ok) throw new Error(payload?.error ?? "Envoi impossible.");
+      if (!response.ok) throw new Error(payload?.error ?? t.submitForm.failed);
       setSent(true);
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Envoi impossible.");
+      setError(caught instanceof Error ? caught.message : t.submitForm.failed);
     } finally {
       setPending(false);
     }
@@ -59,14 +68,10 @@ export function NewsSubmitForm() {
     return (
       <div className="card p-8">
         <CheckCircle2 size={26} strokeWidth={1.6} style={{ color: "var(--secondary)" }} />
-        <h2 className="mt-4 text-[1.3rem]">Proposition enregistrée</h2>
-        <p className="mt-3 max-w-lg leading-7 muted">
-          Merci. Elle sera relue avant d&apos;apparaître dans le fil. Nous vérifions
-          systématiquement la source, la date et le lieu — c&apos;est ce qui fait que nos
-          lecteurs peuvent s&apos;y fier.
-        </p>
+        <h2 className="mt-4 text-[1.3rem]">{t.submitForm.sentTitle}</h2>
+        <p className="mt-3 max-w-lg leading-7 muted">{t.submitForm.sentBody}</p>
         <button type="button" onClick={() => setSent(false)} className="btn btn-ghost mt-6">
-          Proposer autre chose
+          {t.submitForm.sentAgain}
         </button>
       </div>
     );
@@ -74,18 +79,18 @@ export function NewsSubmitForm() {
 
   return (
     <form onSubmit={submit} className="card grid gap-5 p-7 sm:p-8">
-      <Field label="Titre" hint="Ce que vous annonceriez en une phrase.">
+      <Field label={t.submitForm.title} hint={t.submitForm.titleHint}>
         <input
           name="title"
           required
           minLength={8}
           maxLength={180}
           className="field"
-          placeholder="Ouverture d'un centre de thalassothérapie à Aïn Turck"
+          placeholder={t.submitForm.titlePlaceholder}
         />
       </Field>
 
-      <Field label="Description" hint="Ce qu'il faut savoir : quoi, pour qui, quand.">
+      <Field label={t.submitForm.description} hint={t.submitForm.descriptionHint}>
         <textarea
           name="summary"
           required
@@ -93,22 +98,22 @@ export function NewsSubmitForm() {
           maxLength={600}
           rows={4}
           className="field resize-none"
-          placeholder="Bassins d'eau de mer chauffée, espace de récupération et programmes encadrés…"
+          placeholder={t.submitForm.descriptionPlaceholder}
         />
       </Field>
 
       <div className="grid gap-5 sm:grid-cols-2">
-        <Field label="Catégorie">
+        <Field label={t.submitForm.category}>
           <select name="category" required defaultValue="evenement" className="field">
             {CATEGORIES.map((category) => (
               <option key={category} value={category}>
-                {NEWS_CATEGORY_LABEL[category]}
+                {t.newsPage.categories[category]}
               </option>
             ))}
           </select>
         </Field>
 
-        <Field label="Wilaya">
+        <Field label={t.submitForm.wilaya}>
           <select name="wilayaCode" required defaultValue="16" className="field">
             {WILAYAS.map((wilaya) => (
               <option key={wilaya.code} value={wilaya.code}>
@@ -118,25 +123,25 @@ export function NewsSubmitForm() {
           </select>
         </Field>
 
-        <Field label="Date de début" hint="Facultatif pour une ouverture.">
+        <Field label={t.submitForm.startsOn} hint={t.submitForm.startsOnHint}>
           <input type="date" name="startsOn" className="field" />
         </Field>
 
-        <Field label="Organisation">
+        <Field label={t.submitForm.organisation}>
           <input
             name="sourceName"
             required
             minLength={2}
             maxLength={120}
             className="field"
-            placeholder="Nom de votre établissement"
+            placeholder={t.submitForm.organisationPlaceholder}
           />
         </Field>
       </div>
 
       <Field
-        label="Lien vérifiable"
-        hint="Page officielle, communiqué ou article. Sans lien, nous ne publions pas."
+        label={t.submitForm.sourceUrl}
+        hint={t.submitForm.sourceUrlHint}
       >
         <input type="url" name="sourceUrl" required className="field" placeholder="https://…" />
       </Field>
@@ -150,9 +155,9 @@ export function NewsSubmitForm() {
       <div className="flex flex-wrap items-center gap-4">
         <button type="submit" disabled={pending} className="btn btn-primary">
           <Send size={15} />
-          {pending ? "Envoi…" : "Envoyer la proposition"}
+          {pending ? t.submitForm.sending : t.submitForm.send}
         </button>
-        <p className="text-[0.78rem] faint">Relu avant publication.</p>
+        <p className="text-[0.78rem] faint">{t.submitForm.reviewed}</p>
       </div>
     </form>
   );

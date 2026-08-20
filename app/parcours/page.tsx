@@ -3,12 +3,12 @@ import { JourneyBuilder } from "@/components/journey-builder";
 import { DESTINATIONS } from "@/data/destinations";
 import { GOALS } from "@/data/goals";
 import type { GoalId } from "@/types/domain";
+import { getTranslation } from "@/lib/i18n/server";
 
-export const metadata: Metadata = {
-  title: "Construire mon parcours",
-  description:
-    "Décrivez votre projet en une phrase : objectifs, destination, soins, professionnels, itinéraire et budget estimatif se construisent devant vous.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await getTranslation();
+  return { title: t.meta.journey.title, description: t.meta.journey.description };
+}
 
 const VALID_GOALS = new Set<string>(GOALS.map((goal) => goal.id));
 const VALID_DESTINATIONS = new Set<string>(DESTINATIONS.map((entry) => entry.slug));

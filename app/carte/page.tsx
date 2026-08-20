@@ -1,27 +1,26 @@
 import type { Metadata } from "next";
 import { Eyebrow } from "@/components/badges";
 import { AlgeriaMap } from "@/components/algeria-map";
+import { getTranslation } from "@/lib/i18n/server";
 
-export const metadata: Metadata = {
-  title: "Carte santé de l'Algérie",
-  description:
-    "Explorez les destinations santé de l'Algérie : cliniques, dentaire, rééducation, thermalisme, remise en forme, hébergements adaptés.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await getTranslation();
+  return { title: t.meta.map.title, description: t.meta.map.description };
+}
 
-export default function CartePage() {
+export default async function CartePage() {
+  const { t } = await getTranslation();
+
   return (
     <section className="shell section-tight">
       <div className="max-w-2xl">
-        <Eyebrow>Algeria Health Map</Eyebrow>
+        <Eyebrow>{t.map.eyebrow}</Eyebrow>
         <h1 className="mt-6 text-[clamp(2.2rem,5vw,3.4rem)]">
-          Le territoire, lu par
+          {t.map.title1}
           <br />
-          la santé et le bien-être.
+          {t.map.title2}
         </h1>
-        <p className="lede mt-6">
-          Filtrez par type de structure et découvrez comment se répartit l&apos;offre entre
-          littoral, hauts plateaux et Sahara.
-        </p>
+        <p className="lede mt-6">{t.map.lede}</p>
       </div>
 
       <div className="mt-12">

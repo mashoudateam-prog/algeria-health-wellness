@@ -7,33 +7,37 @@ import { Reveal } from "@/components/reveal";
 import { DESTINATION_BY_SLUG } from "@/data/destinations";
 import { GOAL_BY_ID } from "@/data/goals";
 import { UNIVERSES } from "@/data/universes";
+import { localizePath } from "@/lib/i18n/config";
+import { localizedGoal, localizedUniverse } from "@/lib/i18n/content";
+import { getTranslation } from "@/lib/i18n/server";
 
-export const metadata: Metadata = {
-  title: "Univers de séjour",
-  description:
-    "Thalassothérapie, thermalisme, remise en forme, repos, évasion, soins : six façons d'aborder un séjour en Algérie, et ce que chacune permet vraiment.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await getTranslation();
+  return { title: t.meta.universes.title, description: t.meta.universes.description };
+}
 
-export default function UniversPage() {
+export default async function UniversPage() {
+  const { locale, t } = await getTranslation();
+  const link = (href: string) => localizePath(href, locale);
+  const universes = UNIVERSES.map((entry) => localizedUniverse(entry, locale));
+
   return (
     <>
       <section className="shell pb-10 pt-12">
         <div className="max-w-2xl">
-          <Eyebrow>Univers</Eyebrow>
+          <Eyebrow>{t.universes.eyebrow}</Eyebrow>
           <h1 className="mt-6 text-[clamp(2.2rem,5vw,3.4rem)]">
-            Six façons d&apos;aborder
+            {t.universes.title1}
             <br />
-            <span style={{ color: "var(--sage, #7d927b)" }}>un séjour en Algérie.</span>
+            <span style={{ color: "var(--sage, #7d927b)" }}>{t.universes.title2}</span>
           </h1>
           <p className="lede mt-6">
-            Un objectif répond à « que voulez-vous améliorer ». Un univers répond à
-            « quel genre de séjour voulez-vous vivre ». Les deux se rejoignent dans le
-            même parcours — on n&apos;y entre simplement pas par le même chemin.
+            {t.universes.lede}
           </p>
         </div>
       </section>
 
-      {UNIVERSES.map((universe, index) => (
+      {universes.map((universe, index) => (
         <section
           key={universe.slug}
           className="section-tight"
@@ -62,7 +66,7 @@ export default function UniversPage() {
                     className="text-[0.62rem] uppercase tracking-[0.24em]"
                     style={{ color: universe.accent }}
                   >
-                    {String(index + 1).padStart(2, "0")} — Univers
+                    {String(index + 1).padStart(2, "0")} — {t.universes.eyebrow}
                   </span>
 
                   <h2 className="mt-3 text-[clamp(1.7rem,3.4vw,2.5rem)]">{universe.name}</h2>
@@ -73,7 +77,7 @@ export default function UniversPage() {
                   <p className="mt-5 leading-7 muted">{universe.description}</p>
 
                   <h3 className="mt-7 text-[0.64rem] uppercase tracking-[0.2em] faint">
-                    Ce que cela permet
+                    {t.universes.allows}
                   </h3>
                   <ul className="mt-3 space-y-2 text-[0.9rem] leading-6">
                     {universe.suitedFor.map((entry) => (
@@ -96,7 +100,8 @@ export default function UniversPage() {
 
                   <div className="mt-6 flex flex-wrap gap-1.5">
                     {universe.goals.map((goalId) => {
-                      const goal = GOAL_BY_ID.get(goalId);
+                      const raw = GOAL_BY_ID.get(goalId);
+                      const goal = raw ? localizedGoal(raw, locale) : undefined;
                       return (
                         <span key={goalId} className="badge">
                           <span aria-hidden="true">{goal?.emoji}</span> {goal?.label ?? goalId}
@@ -113,11 +118,11 @@ export default function UniversPage() {
                   </div>
 
                   <Link
-                    href={`/parcours?goals=${universe.goals.join(",")}&destination=${universe.destinations[0]}`}
+                    href={link(`/parcours?goals=${universe.goals.join(",")}&destination=${universe.destinations[0]}`)}
                     className="btn btn-primary group mt-7"
                   >
                     <Sparkles size={15} />
-                    Construire ce séjour
+                    {t.universes.buildThis}
                     <ArrowRight size={15} className="transition-transform group-hover:translate-x-0.5" />
                   </Link>
                 </div>
@@ -132,14 +137,12 @@ export default function UniversPage() {
           className="rounded-[32px] p-8 sm:p-10"
           style={{ background: "var(--surface-deep)", color: "#fff" }}
         >
-          <h2 className="text-[clamp(1.4rem,3vw,2rem)]">Ces univers se combinent</h2>
+          <h2 className="text-[clamp(1.4rem,3vw,2rem)]">{t.universes.combineTitle}</h2>
           <p className="mt-3 max-w-2xl text-[0.94rem] leading-7 text-white/60">
-            Un bilan le matin, un bain thermal l&apos;après-midi, une marche le lendemain :
-            c&apos;est le cas le plus fréquent, et le planificateur sait le faire tenir sans
-            surcharger vos journées.
+            {t.universes.combineBody}
           </p>
-          <Link href="/parcours" className="btn btn-accent mt-7">
-            Décrire mon projet en une phrase
+          <Link href={link("/parcours")} className="btn btn-accent mt-7">
+            {t.universes.combineCta}
             <ArrowRight size={15} />
           </Link>
         </div>

@@ -4,15 +4,18 @@ import Link from "next/link";
 import { DemoBadge, Eyebrow } from "@/components/badges";
 import { Reveal } from "@/components/reveal";
 import { newsStore } from "@/lib/news/store";
-import { NEWS_CATEGORY_LABEL, NEWS_ORIGIN_LABEL, type NewsItem } from "@/types/news";
+import { localizedNewsItem } from "@/lib/i18n/content";
+import type { NewsItem } from "@/types/news";
+import { LOCALE_TAG, localizePath, type Locale } from "@/lib/i18n/config";
+import { getTranslation } from "@/lib/i18n/server";
+import type { Dictionary } from "@/lib/i18n/dictionaries/fr";
 
 export const dynamic = "force-dynamic";
 
-export const metadata: Metadata = {
-  title: "Actualités",
-  description:
-    "Événements, festivals, ouvertures et cures saisonnières en Algérie : une veille éditoriale vérifiée avant publication.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await getTranslation();
+  return { title: t.meta.news.title, description: t.meta.news.description };
+}
 
 const CATEGORY_TONE: Record<string, string> = {
   cure: "#2f5f73",
@@ -24,40 +27,35 @@ const CATEGORY_TONE: Record<string, string> = {
 };
 
 export default async function ActualitesPage() {
-  const items = await newsStore.list("publie");
+  const { locale, t } = await getTranslation();
+  const items = (await newsStore.list("publie")).map((item) => localizedNewsItem(item, locale));
 
   return (
     <section className="shell section-tight">
       <div className="flex flex-wrap items-end justify-between gap-6">
         <div className="max-w-2xl">
-          <Eyebrow>Le fil</Eyebrow>
+          <Eyebrow>{t.newsPage.eyebrow}</Eyebrow>
           <h1 className="mt-6 text-[clamp(2.2rem,5vw,3.4rem)]">
-            Ce qui se passe en Algérie,
+            {t.newsPage.title1}
             <br />
-            côté santé et bien-être.
+            {t.newsPage.title2}
           </h1>
-          <p className="lede mt-6">
-            Festivals, cures saisonnières, nouvelles adresses, rendez-vous gastronomiques.
-            Une veille automatisée propose ; une personne vérifie avant publication.
-          </p>
+          <p className="lede mt-6">{t.newsPage.lede}</p>
         </div>
 
-        <Link href="/actualites/proposer" className="btn btn-ghost">
+        <Link href={localizePath("/actualites/proposer", locale)} className="btn btn-ghost">
           <Plus size={15} />
-          Proposer un événement
+          {t.newsPage.submit}
         </Link>
       </div>
 
       {items.length === 0 ? (
-        <p className="card mt-12 p-8 text-[0.92rem] leading-7 muted">
-          Aucune actualité publiée pour le moment. La veille tourne chaque jour et les
-          propositions sont examinées avant d&apos;apparaître ici.
-        </p>
+        <p className="card mt-12 p-8 text-[0.92rem] leading-7 muted">{t.newsPage.empty}</p>
       ) : (
         <ol className="mt-12 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
           {items.map((item, index) => (
             <Reveal key={item.id} delay={index * 0.04}>
-              <NewsCard item={item} />
+              <NewsCard item={item} locale={locale} t={t} />
             </Reveal>
           ))}
         </ol>
@@ -67,14 +65,10 @@ export default async function ActualitesPage() {
         className="mt-14 rounded-[28px] border p-7"
         style={{ borderColor: "var(--border)", background: "var(--surface-soft)" }}
       >
-        <h2 className="text-[1.1rem]">Comment ce fil est constitué</h2>
+        <h2 className="text-[1.1rem]">{t.newsPage.howTitle}</h2>
         <p className="mt-3 max-w-3xl text-[0.88rem] leading-7 muted">
-          Un agent parcourt chaque jour des flux de presse algériens, une recherche web
-          ciblée et les soumissions de nos partenaires. Il écarte automatiquement ce qui
-          n&apos;a pas de source vérifiable, ce qui sort du périmètre santé et bien-être,
-          et les doublons. Ce qui reste est <strong>proposé</strong>, jamais publié : une
-          personne relit et décide. Aucune information ne paraît ici sans avoir été
-          validée, et chaque élément affiche sa source.
+          {t.newsPage.howBodyStart} <strong>{t.newsPage.howBodyStrong}</strong>
+          {t.newsPage.howBodyEnd}
         </p>
       </div>
     </section>
@@ -83,14 +77,14 @@ export default async function ActualitesPage() {
 
 /* ------------------------------------------------------------------ */
 
-function NewsCard({ item }: { item: NewsItem }) {
+function NewsCard({ item, locale, t }: { item: NewsItem; locale: Locale; t: Dictionary }) {
   const tone = CATEGORY_TONE[item.category] ?? "var(--primary)";
 
   return (
     <li className="card flex h-full flex-col p-6">
       <div className="flex flex-wrap items-center gap-2">
         <span className="badge" style={{ color: tone, borderColor: `${tone}44` }}>
-          {NEWS_CATEGORY_LABEL[item.category]}
+          {t.newsPage.categories[item.category]}
         </span>
         {item.demo && <DemoBadge />}
       </div>
@@ -100,22 +94,22 @@ function NewsCard({ item }: { item: NewsItem }) {
 
       <dl className="mt-5 space-y-1.5 border-t pt-4 text-[0.8rem]" style={{ borderColor: "var(--border)" }}>
         <div className="flex items-center gap-2">
-          <dt className="sr-only">Lieu</dt>
+          <dt className="sr-only">{t.newsPage.place}</dt>
           <MapPin size={13} className="shrink-0 faint" />
           <dd>{item.locationLabel}</dd>
         </div>
         {item.startsOn && (
           <div className="flex items-center gap-2">
-            <dt className="sr-only">Date</dt>
+            <dt className="sr-only">{t.newsPage.date}</dt>
             <CalendarDays size={13} className="shrink-0 faint" />
-            <dd>{formatRange(item.startsOn, item.endsOn)}</dd>
+            <dd>{formatRange(item.startsOn, item.endsOn, locale, t)}</dd>
           </div>
         )}
       </dl>
 
       <div className="mt-4 flex items-center justify-between gap-3 text-[0.76rem] faint">
         <span>
-          {NEWS_ORIGIN_LABEL[item.origin]} · {item.sourceName}
+          {t.newsPage.origins[item.origin]} · {item.sourceName}
         </span>
         {item.sourceUrl && (
           <a
@@ -124,7 +118,7 @@ function NewsCard({ item }: { item: NewsItem }) {
             rel="noopener noreferrer nofollow"
             className="inline-flex items-center gap-1 underline"
           >
-            Source
+            {t.common.source}
             <ArrowUpRight size={12} />
           </a>
         )}
@@ -133,13 +127,18 @@ function NewsCard({ item }: { item: NewsItem }) {
   );
 }
 
-function formatRange(startsOn: string, endsOn: string | null): string {
+function formatRange(
+  startsOn: string,
+  endsOn: string | null,
+  locale: Locale,
+  t: Dictionary,
+): string {
   const format = (iso: string) =>
-    new Date(`${iso}T00:00:00Z`).toLocaleDateString("fr-FR", {
+    new Date(`${iso}T00:00:00Z`).toLocaleDateString(LOCALE_TAG[locale], {
       day: "numeric",
       month: "long",
       year: "numeric",
     });
 
-  return endsOn ? `Du ${format(startsOn)} au ${format(endsOn)}` : format(startsOn);
+  return endsOn ? t.newsPage.range(format(startsOn), format(endsOn)) : format(startsOn);
 }

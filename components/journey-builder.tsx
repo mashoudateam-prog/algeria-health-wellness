@@ -14,12 +14,16 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { FACILITY_BY_ID, FACILITY_KIND_LABEL } from "@/data/facilities";
+import { FACILITY_BY_ID } from "@/data/facilities";
 import { DESTINATIONS } from "@/data/destinations";
 import { GOALS } from "@/data/goals";
 import { formatDZD } from "@/lib/ai/quote";
-import { STEP_KIND_LABEL } from "@/lib/ai/planner";
+import { stepKindLabel } from "@/lib/ai/planner";
 import type { GoalId, JourneyPlan, Origin, StepKind } from "@/types/domain";
+import { fill, useTranslation } from "@/components/i18n-provider";
+import { localizedFacility, localizedGoal } from "@/lib/i18n/content";
+import { localizePath, type Locale } from "@/lib/i18n/config";
+import type { Dictionary } from "@/lib/i18n/dictionaries/fr";
 
 /* ------------------------------------------------------------------ */
 
@@ -31,16 +35,20 @@ interface PlanResponse {
 }
 
 /** Étapes de la révélation progressive : la phrase devient un séjour, sous les yeux. */
-const STAGES = [
-  { key: "objectif", label: "Objectif" },
-  { key: "destination", label: "Destination" },
-  { key: "soins", label: "Soins & bien-être" },
-  { key: "professionnels", label: "Professionnels" },
-  { key: "hebergement", label: "Hébergement" },
-  { key: "itineraire", label: "Itinéraire" },
-  { key: "budget", label: "Budget" },
-  { key: "parcours", label: "Mon parcours" },
-] as const;
+function buildStages(t: Dictionary) {
+  return [
+    t.builder.stageGoal,
+    t.builder.stageDestination,
+    t.builder.stageCare,
+    t.builder.stageProfessionals,
+    t.builder.stageLodging,
+    t.builder.stageItinerary,
+    t.builder.stageBudget,
+    t.builder.stageJourney,
+  ];
+}
+
+const STAGE_COUNT = 8;
 
 const STEP_TONE: Record<StepKind, string> = {
   soin: "#9a6845",
@@ -64,6 +72,8 @@ export function JourneyBuilder({
   initialDestination?: string;
 }) {
   const reduced = useReducedMotion();
+  const { locale, t } = useTranslation();
+  const STAGES = buildStages(t);
 
   const [text, setText] = useState(initialText);
   const [goals, setGoals] = useState<GoalId[]>(initialGoals);
@@ -123,6 +133,9 @@ export function JourneyBuilder({
         body: JSON.stringify({
           text,
           goals,
+          // /api est hors du matcher du middleware : la langue ne peut pas
+          // arriver par en-tête, elle voyage donc dans le corps.
+          locale,
           // Une destination reçue en paramètre est envoyée d'emblée : elle vient
           // d'une page qui l'a annoncée au visiteur.
           ...(initialDestination && !optionsTouched ? { destinationSlug: initialDestination } : {}),
@@ -139,9 +152,9 @@ export function JourneyBuilder({
       });
 
       const payload = await response.json();
-      if (!response.ok) throw new Error(payload?.error ?? "Génération impossible.");
+      if (!response.ok) throw new Error(payload?.error ?? t.builder.failed);
 
-      const settle = reduced ? 0 : STAGES.length * step + 200;
+      const settle = reduced ? 0 : STAGE_COUNT * step + 200;
       timers.current.push(
         setTimeout(() => {
           const data = payload as PlanResponse;
@@ -154,17 +167,17 @@ export function JourneyBuilder({
           setDestinationSlug(data.plan.destination.slug);
 
           setResult(data);
-          setStage(STAGES.length);
+          setStage(STAGE_COUNT);
           setStatus("done");
           resultRef.current?.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "start" });
         }, settle),
       );
     } catch (caught) {
       timers.current.forEach(clearTimeout);
-      setError(caught instanceof Error ? caught.message : "Génération impossible.");
+      setError(caught instanceof Error ? caught.message : t.builder.failed);
       setStatus("error");
     }
-  }, [text, goals, days, travellers, origin, budgetTier, destinationSlug, optionsTouched, initialDestination, reduced]);
+  }, [text, goals, days, travellers, origin, budgetTier, destinationSlug, optionsTouched, initialDestination, reduced, t]);
 
   // Un parcours pré-rempli depuis la page d'accueil se construit tout seul.
   const autoRan = useRef(false);
@@ -187,16 +200,16 @@ export function JourneyBuilder({
       {/* ------------------------------------------------------ SAISIE */}
       <section className="shell pb-10 pt-10 lg:pt-14">
         <div className="mx-auto max-w-3xl">
-          <p className="eyebrow eyebrow-line">Health Journey Builder</p>
+          <p className="eyebrow eyebrow-line">{t.builder.eyebrow}</p>
           <h1 className="mt-6 text-[clamp(2.2rem,5.2vw,3.6rem)]">
-            Décrivez votre projet.
+            {t.builder.title1}
             <br />
-            <span style={{ color: "var(--sage, #7d927b)" }}>Le séjour se construit.</span>
+            <span style={{ color: "var(--sage, #7d927b)" }}>{t.builder.title2}</span>
           </h1>
 
           <div className="card mt-9 p-6 sm:p-8">
             <label htmlFor="projet-libre" className="block text-[0.88rem] font-medium">
-              Votre projet, en vos mots
+              {t.builder.projectLabel}
             </label>
             <textarea
               id="projet-libre"
@@ -204,14 +217,15 @@ export function JourneyBuilder({
               onChange={(event) => setText(event.target.value)}
               rows={3}
               maxLength={1200}
-              placeholder="Je veux venir en Algérie pendant une semaine pour prendre soin de moi."
+              placeholder={t.builder.projectPlaceholder}
               className="field mt-2.5 resize-none text-[1.02rem]"
             />
 
             <fieldset className="mt-6">
-              <legend className="text-[0.88rem] font-medium">Vos objectifs</legend>
+              <legend className="text-[0.88rem] font-medium">{t.builder.goalsLegend}</legend>
               <div className="mt-3 flex flex-wrap gap-2">
-                {GOALS.map((goal) => {
+                {GOALS.map((raw) => {
+                  const goal = localizedGoal(raw, locale);
                   const active = goals.includes(goal.id);
                   return (
                     <button
@@ -239,7 +253,7 @@ export function JourneyBuilder({
               aria-expanded={showOptions}
               className="btn btn-quiet mt-6 text-[0.84rem]"
             >
-              Préciser durée, voyageurs et budget
+              {t.builder.moreOptions}
               <ChevronDown
                 size={15}
                 style={{ transform: showOptions ? "rotate(180deg)" : undefined, transition: "transform 200ms" }}
@@ -250,7 +264,7 @@ export function JourneyBuilder({
               <div className="mt-5 grid gap-5 border-t pt-6 sm:grid-cols-2" style={{ borderColor: "var(--border)" }}>
                 <div>
                   <label htmlFor="duree" className="block text-[0.82rem] font-medium">
-                    Durée : <span className="tabular-nums">{days} jours</span>
+                    {t.builder.duration} : <span className="tabular-nums">{days} {t.common.days}</span>
                   </label>
                   <input
                     id="duree"
@@ -265,7 +279,7 @@ export function JourneyBuilder({
 
                 <div>
                   <label htmlFor="voyageurs" className="block text-[0.82rem] font-medium">
-                    Voyageurs : <span className="tabular-nums">{travellers}</span>
+                    {t.builder.travellersLabel} : <span className="tabular-nums">{travellers}</span>
                   </label>
                   <input
                     id="voyageurs"
@@ -280,7 +294,7 @@ export function JourneyBuilder({
 
                 <div>
                   <label htmlFor="origine" className="block text-[0.82rem] font-medium">
-                    Vous arrivez
+                    {t.builder.arriving}
                   </label>
                   <select
                     id="origine"
@@ -288,14 +302,14 @@ export function JourneyBuilder({
                     onChange={(event) => { setOptionsTouched(true); setOrigin(event.target.value as Origin); }}
                     className="field mt-2"
                   >
-                    <option value="algerie">Je suis déjà en Algérie</option>
-                    <option value="etranger">Je viens de l&apos;étranger</option>
+                    <option value="algerie">{t.builder.fromAlgeria}</option>
+                    <option value="etranger">{t.builder.fromAbroad}</option>
                   </select>
                 </div>
 
                 <div>
                   <label htmlFor="destination" className="block text-[0.82rem] font-medium">
-                    Destination souhaitée
+                    {t.builder.destinationLabel}
                   </label>
                   <select
                     id="destination"
@@ -303,7 +317,7 @@ export function JourneyBuilder({
                     onChange={(event) => { setOptionsTouched(true); setDestinationSlug(event.target.value); }}
                     className="field mt-2"
                   >
-                    <option value="">Laisser la plateforme proposer</option>
+                    <option value="">{t.builder.destinationAuto}</option>
                     {DESTINATIONS.map((destination) => (
                       <option key={destination.slug} value={destination.slug}>
                         {destination.name}
@@ -313,13 +327,13 @@ export function JourneyBuilder({
                 </div>
 
                 <div className="sm:col-span-2">
-                  <span className="block text-[0.82rem] font-medium">Niveau de confort</span>
+                  <span className="block text-[0.82rem] font-medium">{t.builder.comfort}</span>
                   <div className="mt-2.5 flex gap-2">
                     {(
                       [
-                        [1, "Essentiel"],
-                        [2, "Confort"],
-                        [3, "Premium"],
+                        [1, t.builder.comfortEssential],
+                        [2, t.builder.comfortComfort],
+                        [3, t.builder.comfortPremium],
                       ] as const
                     ).map(([tier, label]) => (
                       <button
@@ -350,7 +364,7 @@ export function JourneyBuilder({
                 className="btn btn-primary group"
               >
                 <Sparkles size={16} />
-                {status === "building" ? "Construction en cours…" : "Construire mon parcours"}
+                {status === "building" ? t.builder.building : t.builder.build}
                 {status !== "building" && (
                   <ArrowRight size={16} className="transition-transform group-hover:translate-x-0.5" />
                 )}
@@ -358,7 +372,7 @@ export function JourneyBuilder({
               {status === "done" && (
                 <button type="button" onClick={build} className="btn btn-quiet">
                   <RotateCcw size={14} />
-                  Reconstruire
+                  {t.builder.rebuild}
                 </button>
               )}
             </div>
@@ -385,13 +399,13 @@ export function JourneyBuilder({
           >
             <div className="shell">
               <p className="text-[0.62rem] uppercase tracking-[0.28em] text-white/40">
-                Construction du parcours
+                {t.builder.buildingStage}
               </p>
               <ol className="mt-7 space-y-3.5">
-                {STAGES.map((entry, index) => {
+                {STAGES.map((label, index) => {
                   const state = index < stage ? "done" : index === stage ? "active" : "todo";
                   return (
-                    <li key={entry.key} className="flex items-center gap-4">
+                    <li key={label} className="flex items-center gap-4">
                       <span
                         className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border text-[0.62rem] tabular-nums transition-colors duration-300"
                         style={{
@@ -409,7 +423,7 @@ export function JourneyBuilder({
                           transform: state === "active" ? "translateX(4px)" : undefined,
                         }}
                       >
-                        {entry.label}
+                        {label}
                       </span>
                     </li>
                   );
@@ -422,7 +436,7 @@ export function JourneyBuilder({
 
       {/* ------------------------------------------------------ RÉSULTAT */}
       <div ref={resultRef}>
-        {status === "done" && result && <JourneyResult data={result} />}
+        {status === "done" && result && <JourneyResult data={result} locale={locale} t={t} />}
       </div>
     </>
   );
@@ -432,7 +446,16 @@ export function JourneyBuilder({
 /* Restitution du parcours                                             */
 /* ------------------------------------------------------------------ */
 
-function JourneyResult({ data }: { data: PlanResponse }) {
+function JourneyResult({
+  data,
+  locale,
+  t,
+}: {
+  data: PlanResponse;
+  locale: Locale;
+  t: Dictionary;
+}) {
+  const link = (href: string) => localizePath(href, locale);
   const { plan, understood, confidence } = data;
   const days = groupByDay(plan);
 
@@ -442,7 +465,7 @@ function JourneyResult({ data }: { data: PlanResponse }) {
         <div className="shell">
           <div className="grid gap-10 lg:grid-cols-[1.35fr_0.65fr]">
             <div>
-              <p className="eyebrow eyebrow-line">Votre parcours</p>
+              <p className="eyebrow eyebrow-line">{t.builder.yourJourney}</p>
               <h2 className="mt-5 text-[clamp(1.9rem,4.4vw,3rem)]">{plan.title}</h2>
               <p className="mt-6 max-w-2xl text-[1.02rem] leading-8 muted">{plan.summary}</p>
 
@@ -451,22 +474,24 @@ function JourneyResult({ data }: { data: PlanResponse }) {
                   <MapPin size={13} />
                   {plan.destination.name}
                 </span>
-                <span className="badge">{plan.brief.durationDays} jours</span>
+                <span className="badge">
+                  {plan.brief.durationDays} {t.common.days}
+                </span>
                 {plan.brief.travellers > 1 && (
                   <span className="badge">
                     <Users size={13} />
-                    {plan.brief.travellers} voyageurs
+                    {plan.brief.travellers} {t.common.travellers}
                   </span>
                 )}
                 <span className="badge">
-                  {plan.generatedBy === "regles" ? "Moteur de règles" : "Assisté par IA"}
+                  {plan.generatedBy === "regles" ? t.builder.rulesEngine : t.builder.aiAssisted}
                 </span>
               </div>
             </div>
 
             <aside className="card p-6">
               <h3 className="text-[0.68rem] uppercase tracking-[0.22em] faint">
-                Ce que nous avons compris
+                {t.builder.understood}
               </h3>
               <ul className="mt-4 space-y-2.5 text-[0.86rem] leading-6">
                 {understood.map((entry) => (
@@ -477,8 +502,7 @@ function JourneyResult({ data }: { data: PlanResponse }) {
                 ))}
               </ul>
               <p className="mt-5 border-t pt-4 text-[0.76rem] leading-5 faint" style={{ borderColor: "var(--border)" }}>
-                Niveau de certitude sur les éléments déduits : {Math.round(confidence * 100)} %.
-                Corrigez ce qui ne correspond pas et reconstruisez.
+                {fill(t.builder.confidence, { percent: Math.round(confidence * 100) })}
               </p>
             </aside>
           </div>
@@ -490,7 +514,7 @@ function JourneyResult({ data }: { data: PlanResponse }) {
             >
               <h3 className="flex items-center gap-2 text-[0.9rem] font-medium">
                 <AlertTriangle size={16} style={{ color: "var(--accent)" }} />
-                Points de vigilance
+                {t.builder.cautions}
               </h3>
               <ul className="mt-3.5 space-y-2.5 text-[0.86rem] leading-6 muted">
                 {plan.cautions.map((caution) => (
@@ -505,22 +529,22 @@ function JourneyResult({ data }: { data: PlanResponse }) {
       {/* Itinéraire */}
       <section className="section-tight">
         <div className="shell">
-          <h3 className="text-[clamp(1.5rem,3vw,2.1rem)]">Votre itinéraire, jour par jour</h3>
+          <h3 className="text-[clamp(1.5rem,3vw,2.1rem)]">{t.builder.itineraryTitle}</h3>
           <p className="mt-3 max-w-2xl text-[0.9rem] leading-7 muted">
-            Les journées suivant un acte sont volontairement allégées. Le rythme reste à
-            confirmer avec le professionnel qui vous prend en charge.
+            {t.builder.itineraryBody}
           </p>
 
           <ol className="mt-10 space-y-8">
             {days.map(([day, steps]) => (
               <li key={day} className="grid gap-5 sm:grid-cols-[5.5rem_1fr]">
                 <div className="sm:pt-1">
-                  <span className="text-[0.6rem] uppercase tracking-[0.22em] faint">Jour</span>
+                  <span className="text-[0.6rem] uppercase tracking-[0.22em] faint">{t.common.day}</span>
                   <p className="serif text-3xl leading-none">{String(day).padStart(2, "0")}</p>
                 </div>
                 <ul className="space-y-2.5">
                   {steps.map((step) => {
-                    const facility = step.facilityId ? FACILITY_BY_ID.get(step.facilityId) : undefined;
+                    const raw = step.facilityId ? FACILITY_BY_ID.get(step.facilityId) : undefined;
+                    const facility = raw ? localizedFacility(raw, locale) : undefined;
                     return (
                       <li
                         key={step.id}
@@ -535,14 +559,14 @@ function JourneyResult({ data }: { data: PlanResponse }) {
                               className="badge"
                               style={{ color: STEP_TONE[step.kind], borderColor: `${STEP_TONE[step.kind]}44` }}
                             >
-                              {STEP_KIND_LABEL[step.kind]}
+                              {stepKindLabel(step.kind, locale)}
                             </span>
                           </div>
                           <p className="mt-2 text-[0.86rem] leading-6 muted">{step.detail}</p>
                           {facility && (
                             <p className="mt-2.5 text-[0.78rem] faint">
-                              {FACILITY_KIND_LABEL[facility.kind]} · {facility.name}
-                              {facility.demo && <span className="badge badge-demo ml-2">Démo</span>}
+                              {t.facilityKinds[facility.kind]} · {facility.name}
+                              {facility.demo && <span className="badge badge-demo ml-2">{t.common.demo}</span>}
                             </p>
                           )}
                         </div>
@@ -559,21 +583,21 @@ function JourneyResult({ data }: { data: PlanResponse }) {
       {/* Smart Match */}
       <section className="section-tight border-y" style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
         <div className="shell">
-          <h3 className="text-[clamp(1.5rem,3vw,2.1rem)]">Pourquoi nous vous proposons ces options</h3>
+          <h3 className="text-[clamp(1.5rem,3vw,2.1rem)]">{t.builder.matchTitle}</h3>
           <p className="mt-3 max-w-2xl text-[0.9rem] leading-7 muted">
-            Aucune note globale, aucune étoile. Chaque rapprochement est justifié par des
-            critères que vous pouvez vérifier.
+            {t.builder.matchBody}
           </p>
 
           <div className="mt-10 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
             {plan.matches.map((match) => {
-              const facility = FACILITY_BY_ID.get(match.facilityId);
-              if (!facility) return null;
+              const raw = FACILITY_BY_ID.get(match.facilityId);
+              if (!raw) return null;
+              const facility = localizedFacility(raw, locale);
               return (
                 <article key={match.facilityId} className="card flex flex-col p-6">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="badge">{FACILITY_KIND_LABEL[facility.kind]}</span>
-                    {facility.demo && <span className="badge badge-demo">Démo</span>}
+                    <span className="badge">{t.facilityKinds[facility.kind]}</span>
+                    {facility.demo && <span className="badge badge-demo">{t.common.demo}</span>}
                   </div>
                   <h4 className="mt-3.5 text-[1.16rem] leading-snug">{facility.name}</h4>
                   <p className="mt-2.5 text-[0.86rem] leading-6 muted">{facility.summary}</p>
@@ -588,10 +612,10 @@ function JourneyResult({ data }: { data: PlanResponse }) {
                   </ul>
 
                   <Link
-                    href={`/professionnels/${facility.slug}`}
+                    href={link(`/professionnels/${facility.slug}`)}
                     className="btn btn-quiet mt-5 self-start text-[0.82rem]"
                   >
-                    Voir la fiche
+                    {t.common.seeSheet}
                     <ArrowRight size={14} />
                   </Link>
                 </article>
@@ -605,15 +629,15 @@ function JourneyResult({ data }: { data: PlanResponse }) {
       <section className="section-tight">
         <div className="shell grid gap-10 lg:grid-cols-[1.3fr_0.7fr]">
           <div>
-            <h3 className="text-[clamp(1.5rem,3vw,2.1rem)]">Estimation du budget</h3>
+            <h3 className="text-[clamp(1.5rem,3vw,2.1rem)]">{t.builder.budgetTitle}</h3>
             <p className="mt-3 max-w-xl text-[0.9rem] leading-7 muted">{plan.quote.disclaimer}</p>
 
             <table className="mt-8 w-full text-left text-[0.88rem]">
-              <caption className="sr-only">Estimation ventilée par poste</caption>
+              <caption className="sr-only">{t.builder.budgetCaption}</caption>
               <thead>
                 <tr className="border-b text-[0.7rem] uppercase tracking-[0.14em] faint" style={{ borderColor: "var(--border)" }}>
-                  <th scope="col" className="pb-3 font-medium">Poste</th>
-                  <th scope="col" className="pb-3 text-right font-medium">Fourchette</th>
+                  <th scope="col" className="pb-3 font-medium">{t.builder.budgetItem}</th>
+                  <th scope="col" className="pb-3 text-right font-medium">{t.builder.budgetRange}</th>
                 </tr>
               </thead>
               <tbody>
@@ -631,7 +655,7 @@ function JourneyResult({ data }: { data: PlanResponse }) {
               </tbody>
               <tfoot>
                 <tr>
-                  <th scope="row" className="pt-4 text-left font-medium">Estimation totale</th>
+                  <th scope="row" className="pt-4 text-left font-medium">{t.builder.budgetTotal}</th>
                   <td className="pt-4 text-right font-medium tabular-nums whitespace-nowrap">
                     {formatDZD(plan.quote.totalMin)} – {formatDZD(plan.quote.totalMax)}
                   </td>
@@ -641,7 +665,7 @@ function JourneyResult({ data }: { data: PlanResponse }) {
           </div>
 
           <aside className="card h-fit p-6">
-            <h4 className="text-[0.68rem] uppercase tracking-[0.22em] faint">Prochaines étapes</h4>
+            <h4 className="text-[0.68rem] uppercase tracking-[0.22em] faint">{t.builder.nextSteps}</h4>
             <ol className="mt-4 space-y-3 text-[0.86rem] leading-6">
               {plan.nextActions.map((action, index) => (
                 <li key={action} className="flex gap-3">
@@ -650,8 +674,8 @@ function JourneyResult({ data }: { data: PlanResponse }) {
                 </li>
               ))}
             </ol>
-            <Link href="/concierge" className="btn btn-primary mt-6 w-full">
-              Parler à un conseiller
+            <Link href={link("/concierge")} className="btn btn-primary mt-6 w-full">
+              {t.common.talkToAdviser}
             </Link>
           </aside>
         </div>
@@ -661,8 +685,7 @@ function JourneyResult({ data }: { data: PlanResponse }) {
         <div className="shell flex items-start gap-3">
           <Info size={17} className="mt-0.5 shrink-0" style={{ color: "var(--secondary)" }} />
           <p className="max-w-3xl text-[0.86rem] leading-6 muted">
-            {plan.disclaimer} Les établissements et praticiens présentés proviennent d&apos;un
-            catalogue de démonstration : ils sont fictifs et signalés comme tels.
+            {plan.disclaimer} {t.builder.demoNotice}
           </p>
         </div>
       </section>

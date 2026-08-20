@@ -4,13 +4,10 @@ import { ArrowRight, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { GOALS } from "@/data/goals";
+import { useTranslation } from "@/components/i18n-provider";
+import { localizePath } from "@/lib/i18n/config";
+import { localizedGoal } from "@/lib/i18n/content";
 import type { GoalId } from "@/types/domain";
-
-const EXAMPLES = [
-  "Je viens de France 10 jours : soins dentaires, perdre un peu de poids et me reposer.",
-  "Une semaine à Béjaïa pour reprendre le sport après une longue pause.",
-  "Bilan de santé complet à Alger, puis quelques jours au calme.",
-];
 
 /**
  * Point d'entrée du produit. On ne demande jamais « choisissez une clinique »,
@@ -19,6 +16,7 @@ const EXAMPLES = [
  */
 export function GoalPicker({ compact = false }: { compact?: boolean }) {
   const router = useRouter();
+  const { locale, t } = useTranslation();
   const [selected, setSelected] = useState<GoalId[]>([]);
   const [text, setText] = useState("");
 
@@ -31,7 +29,7 @@ export function GoalPicker({ compact = false }: { compact?: boolean }) {
     const params = new URLSearchParams();
     if (text.trim()) params.set("q", text.trim());
     if (selected.length > 0) params.set("goals", selected.join(","));
-    router.push(`/parcours${params.toString() ? `?${params}` : ""}`);
+    router.push(localizePath(`/parcours${params.toString() ? `?${params}` : ""}`, locale));
   };
 
   const ready = selected.length > 0 || text.trim().length > 3;
@@ -42,9 +40,10 @@ export function GoalPicker({ compact = false }: { compact?: boolean }) {
         className="grid gap-2.5"
         style={{ gridTemplateColumns: "repeat(auto-fill, minmax(9.5rem, 1fr))" }}
         role="group"
-        aria-label="Vos objectifs"
+        aria-label={t.goalPicker.legend}
       >
-        {GOALS.map((goal) => {
+        {GOALS.map((raw) => {
+          const goal = localizedGoal(raw, locale);
           const active = selected.includes(goal.id);
           return (
             <button
@@ -80,7 +79,7 @@ export function GoalPicker({ compact = false }: { compact?: boolean }) {
 
       <div className="mt-7">
         <label htmlFor="projet" className="block text-[0.86rem] font-medium">
-          Ou décrivez votre projet en une phrase
+          {t.goalPicker.describeLabel}
         </label>
         <textarea
           id="projet"
@@ -88,11 +87,11 @@ export function GoalPicker({ compact = false }: { compact?: boolean }) {
           onChange={(event) => setText(event.target.value)}
           rows={3}
           maxLength={600}
-          placeholder="Je souhaite venir en Algérie une dizaine de jours pour faire un bilan, m'occuper de mes dents et me reposer un peu."
+          placeholder={t.goalPicker.placeholder}
           className="field mt-2.5 resize-none"
         />
         <div className="mt-2 flex flex-wrap gap-2">
-          {EXAMPLES.map((example) => (
+          {t.goalPicker.examples.map((example) => (
             <button
               key={example}
               type="button"
@@ -109,13 +108,13 @@ export function GoalPicker({ compact = false }: { compact?: boolean }) {
       <div className="mt-7 flex flex-wrap items-center gap-4">
         <button type="button" onClick={start} disabled={!ready} className="btn btn-primary group">
           <Sparkles size={16} />
-          Construire mon parcours
+          {t.common.buildJourney}
           <ArrowRight size={16} className="transition-transform group-hover:translate-x-0.5" />
         </button>
         <p className="text-[0.78rem] faint">
           {selected.length > 0
-            ? `${selected.length} objectif${selected.length > 1 ? "s" : ""} sélectionné${selected.length > 1 ? "s" : ""}`
-            : "Sélectionnez un objectif ou décrivez votre projet"}
+            ? t.goalPicker.selectedCount(selected.length)
+            : t.goalPicker.prompt}
         </p>
       </div>
     </div>

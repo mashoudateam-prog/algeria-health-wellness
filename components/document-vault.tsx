@@ -2,10 +2,16 @@
 
 import { AlertCircle, Clock, Eye, FileText, ShieldOff, Share2, X } from "lucide-react";
 import { useMemo, useState } from "react";
+import { useTranslation } from "@/components/i18n-provider";
+import { LOCALE_TAG, type Locale } from "@/lib/i18n/config";
+import {
+  localizedAttention,
+  localizedAuditEntry,
+  localizedDocumentName,
+} from "@/lib/i18n/content";
 import {
   DEMO_AUDIT,
   DEMO_DOCUMENTS,
-  DOCUMENT_CATEGORY_LABEL,
 } from "@/data/demo-account";
 import type { AuditEntry, DocumentCategory, VaultDocument } from "@/types/domain";
 
@@ -27,15 +33,17 @@ const RECIPIENTS = [
   { value: "Laboratoire Méditerranée", kind: "laboratoire" as const },
 ];
 
+// Le libellé vient du dictionnaire ; seule la durée est structurelle.
 const DURATIONS = [
-  { label: "24 heures", days: 1 },
-  { label: "7 jours", days: 7 },
-  { label: "30 jours", days: 30 },
+  { key: "d1" as const, days: 1 },
+  { key: "d7" as const, days: 7 },
+  { key: "d30" as const, days: 30 },
 ];
 
 const REFERENCE_DATE = new Date("2026-08-19T00:00:00Z");
 
 export function DocumentVault() {
+  const { locale, t } = useTranslation();
   const [documents, setDocuments] = useState<VaultDocument[]>(DEMO_DOCUMENTS);
   const [audit, setAudit] = useState<AuditEntry[]>(DEMO_AUDIT);
   const [filter, setFilter] = useState<DocumentCategory | "all">("all");
@@ -91,10 +99,10 @@ export function DocumentVault() {
     );
 
     log({
-      actor: "Vous",
+      actor: t.vault.you,
       action: "document.partage",
       target: target.name,
-      detail: `Accès accordé à ${recipient} pour ${days} jour${days > 1 ? "s" : ""}, jusqu'au ${formatDate(expiresIso)}.`,
+      detail: t.vault.granted(recipient, days, formatDate(expiresIso, locale)),
     });
 
     setSharing(null);
@@ -121,17 +129,17 @@ export function DocumentVault() {
     );
 
     log({
-      actor: "Vous",
+      actor: t.vault.you,
       action: "document.revoque",
       target: target.name,
-      detail: `Accès de ${revoked.recipient} révoqué immédiatement.`,
+      detail: t.vault.revokedLog(revoked.recipient),
     });
   };
 
   return (
     <div className="grid gap-10 lg:grid-cols-[1.45fr_0.55fr]">
       <div>
-        <div className="flex flex-wrap gap-2" role="group" aria-label="Filtrer par catégorie">
+        <div className="flex flex-wrap gap-2" role="group" aria-label={t.vault.filterGroup}>
           <button
             type="button"
             onClick={() => setFilter("all")}
@@ -139,7 +147,7 @@ export function DocumentVault() {
             className="rounded-full border px-3.5 py-2 text-[0.78rem] transition-colors"
             style={chipStyle(filter === "all")}
           >
-            Tous ({documents.length})
+            {t.vault.all(documents.length)}
           </button>
           {categories.map((category) => (
             <button
@@ -150,7 +158,7 @@ export function DocumentVault() {
               className="rounded-full border px-3.5 py-2 text-[0.78rem] transition-colors"
               style={chipStyle(filter === category)}
             >
-              {DOCUMENT_CATEGORY_LABEL[category]}
+              {t.vault.categories[category]}
             </button>
           ))}
         </div>
@@ -164,10 +172,13 @@ export function DocumentVault() {
                   <div className="flex items-start gap-3.5">
                     <FileText size={20} strokeWidth={1.6} className="mt-0.5 shrink-0" style={{ color: "var(--secondary)" }} />
                     <div>
-                      <h3 className="text-[1rem] leading-snug">{document.name}</h3>
+                      <h3 className="text-[1rem] leading-snug">
+                        {localizedDocumentName(document.name, locale)}
+                      </h3>
                       <p className="mt-1 text-[0.78rem] faint">
-                        {DOCUMENT_CATEGORY_LABEL[document.category]} · {formatSize(document.sizeKb)} ·
-                        ajouté le {formatDate(document.addedAt)}
+                        {t.vault.categories[document.category]} ·{" "}
+                        {formatSize(document.sizeKb, t.vault.megabytes)} ·{" "}
+                        {t.vault.addedOn(formatDate(document.addedAt, locale))}
                       </p>
                     </div>
                   </div>
@@ -179,7 +190,7 @@ export function DocumentVault() {
                     aria-expanded={sharing === document.id}
                   >
                     <Share2 size={14} />
-                    Partager
+                    {t.vault.share}
                   </button>
                 </div>
 
@@ -190,10 +201,9 @@ export function DocumentVault() {
                   >
                     <AlertCircle size={15} className="mt-0.5 shrink-0" />
                     <span>
-                      {document.needsAttention}
+                      {localizedAttention(document.needsAttention, locale)}
                       <span className="mt-1 block text-[0.74rem] opacity-80">
-                        Signalé automatiquement sur la forme du document — son contenu médical
-                        n&apos;est jamais analysé.
+                        {t.vault.attentionNote}
                       </span>
                     </span>
                   </p>
@@ -209,7 +219,7 @@ export function DocumentVault() {
                 {document.shares.length > 0 && (
                   <div className="mt-5 border-t pt-4" style={{ borderColor: "var(--border)" }}>
                     <h4 className="text-[0.64rem] uppercase tracking-[0.2em] faint">
-                      Accès ({active.length} actif{active.length > 1 ? "s" : ""})
+                      {t.vault.accesses(active.length)}
                     </h4>
                     <ul className="mt-3 space-y-2.5">
                       {document.shares.map((entry) => (
@@ -221,8 +231,8 @@ export function DocumentVault() {
                             <span className="mt-0.5 flex items-center gap-1.5 text-[0.76rem] faint">
                               <Clock size={12} />
                               {entry.revokedAt
-                                ? `Révoqué le ${formatDate(entry.revokedAt)}`
-                                : `Expire le ${formatDate(entry.expiresAt)}`}
+                                ? t.vault.revokedOn(formatDate(entry.revokedAt, locale))
+                                : t.vault.expiresOn(formatDate(entry.expiresAt, locale))}
                             </span>
                           </div>
                           {!entry.revokedAt && (
@@ -232,7 +242,7 @@ export function DocumentVault() {
                               className="btn btn-quiet text-[0.78rem]"
                             >
                               <ShieldOff size={13} />
-                              Révoquer
+                              {t.vault.revoke}
                             </button>
                           )}
                         </li>
@@ -250,10 +260,12 @@ export function DocumentVault() {
         <div className="card p-6">
           <h2 className="flex items-center gap-2 text-[0.66rem] uppercase tracking-[0.22em] faint">
             <Eye size={13} />
-            Qui a consulté mes documents
+            {t.vault.auditTitle}
           </h2>
           <ol className="mt-4 space-y-4">
-            {audit.slice(0, 8).map((entry) => (
+            {audit.slice(0, 8).map((raw) => {
+              const entry = localizedAuditEntry(raw, locale);
+              return (
               <li key={entry.id} className="border-l-2 pl-3.5" style={{ borderColor: "var(--border-strong)" }}>
                 <p className="text-[0.82rem] leading-5">
                   <span className="font-medium">{entry.actor}</span> · {entry.target}
@@ -261,11 +273,11 @@ export function DocumentVault() {
                 <p className="mt-1 text-[0.76rem] leading-5 faint">{entry.detail}</p>
                 <p className="mt-1 text-[0.72rem] tabular-nums faint">{entry.at}</p>
               </li>
-            ))}
+              );
+            })}
           </ol>
           <p className="mt-5 border-t pt-4 text-[0.74rem] leading-5 faint" style={{ borderColor: "var(--border)" }}>
-            Ce journal vous est réservé. Aucune de ces informations n&apos;est visible par
-            les établissements.
+            {t.vault.auditNotice}
           </p>
         </div>
       </aside>
@@ -282,6 +294,7 @@ function ShareForm({
   onSubmit: (recipient: string, days: number) => void;
   onCancel: () => void;
 }) {
+  const { t } = useTranslation();
   const [recipient, setRecipient] = useState(RECIPIENTS[0].value);
   const [days, setDays] = useState(7);
 
@@ -295,8 +308,8 @@ function ShareForm({
       style={{ background: "var(--surface-soft)" }}
     >
       <div className="flex items-center justify-between">
-        <h4 className="text-[0.88rem] font-medium">Ouvrir un accès temporaire</h4>
-        <button type="button" onClick={onCancel} aria-label="Annuler" className="rounded-full p-1 hover:bg-black/5">
+        <h4 className="text-[0.88rem] font-medium">{t.vault.openAccess}</h4>
+        <button type="button" onClick={onCancel} aria-label={t.vault.cancel} className="rounded-full p-1 hover:bg-black/5">
           <X size={15} />
         </button>
       </div>
@@ -304,7 +317,7 @@ function ShareForm({
       <div className="mt-4 grid gap-4 sm:grid-cols-2">
         <div>
           <label htmlFor="destinataire" className="block text-[0.78rem] faint">
-            Destinataire
+            {t.vault.recipient}
           </label>
           <select
             id="destinataire"
@@ -321,7 +334,7 @@ function ShareForm({
         </div>
 
         <div>
-          <span className="block text-[0.78rem] faint">Durée de l&apos;accès</span>
+          <span className="block text-[0.78rem] faint">{t.vault.duration}</span>
           <div className="mt-1.5 flex gap-1.5">
             {DURATIONS.map((duration) => (
               <button
@@ -332,7 +345,7 @@ function ShareForm({
                 className="flex-1 rounded-full border px-2 py-2 text-[0.76rem] transition-colors"
                 style={chipStyle(days === duration.days)}
               >
-                {duration.label}
+                {t.vault.durations[duration.key]}
               </button>
             ))}
           </div>
@@ -340,11 +353,9 @@ function ShareForm({
       </div>
 
       <button type="submit" className="btn btn-primary btn-sm mt-4">
-        Accorder l&apos;accès
+        {t.vault.grant}
       </button>
-      <p className="mt-2.5 text-[0.74rem] leading-5 faint">
-        L&apos;accès se ferme seul à l&apos;échéance. Vous pouvez le révoquer avant.
-      </p>
+      <p className="mt-2.5 text-[0.74rem] leading-5 faint">{t.vault.grantNotice}</p>
     </form>
   );
 }
@@ -359,12 +370,12 @@ function chipStyle(active: boolean): React.CSSProperties {
   };
 }
 
-function formatSize(kb: number): string {
-  return kb >= 1_024 ? `${(kb / 1_024).toFixed(1)} Mo` : `${kb} Ko`;
+function formatSize(kb: number, megabytes: (n: string) => string): string {
+  return kb >= 1_024 ? megabytes((kb / 1_024).toFixed(1)) : `${kb} Ko`;
 }
 
-function formatDate(iso: string): string {
-  return new Date(`${iso}T00:00:00Z`).toLocaleDateString("fr-FR", {
+function formatDate(iso: string, locale: Locale): string {
+  return new Date(`${iso}T00:00:00Z`).toLocaleDateString(LOCALE_TAG[locale], {
     day: "numeric",
     month: "long",
     year: "numeric",

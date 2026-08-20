@@ -1,4 +1,4 @@
-import type { Facility, FacilityKind, Professional } from "@/types/domain";
+import type { Facility, Professional } from "@/types/domain";
 
 /**
  * ⚠️ CATALOGUE DE DÉMONSTRATION
@@ -12,20 +12,6 @@ import type { Facility, FacilityKind, Professional } from "@/types/domain";
  * par des partenaires contractualisés et vérifiés (voir `lib/repository.ts`).
  */
 
-export const FACILITY_KIND_LABEL: Record<FacilityKind, string> = {
-  clinique: "Clinique",
-  hopital: "Établissement hospitalier",
-  dentaire: "Centre dentaire",
-  reeducation: "Centre de rééducation",
-  thermal: "Station thermale",
-  spa: "Spa et bien-être",
-  forme: "Centre de remise en forme",
-  salle: "Salle de sport",
-  laboratoire: "Laboratoire d'analyses",
-  imagerie: "Centre d'imagerie",
-  nutrition: "Nutrition et diététique",
-  hebergement: "Hébergement adapté",
-};
 
 const verified = (checks: string[]) => ({
   status: "verifie" as const,

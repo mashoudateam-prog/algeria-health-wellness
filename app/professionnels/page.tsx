@@ -3,41 +3,43 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { DemoBadge, Eyebrow, VerificationBadge } from "@/components/badges";
 import { DESTINATION_BY_SLUG } from "@/data/destinations";
-import { FACILITIES, FACILITY_KIND_LABEL, PROFESSIONALS } from "@/data/facilities";
+import { FACILITIES, PROFESSIONALS } from "@/data/facilities";
+import { localizePath } from "@/lib/i18n/config";
+import { localizedDestination, localizedFacility } from "@/lib/i18n/content";
+import { getTranslation } from "@/lib/i18n/server";
 
-export const metadata: Metadata = {
-  title: "Établissements et professionnels",
-  description:
-    "Annuaire des établissements et praticiens : spécialités, langues d'accueil, services d'accompagnement et statut de vérification.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await getTranslation();
+  return { title: t.directory.title, description: t.directory.metaDescription };
+}
 
-export default function ProfessionnelsPage() {
+export default async function ProfessionnelsPage() {
+  const { locale, t } = await getTranslation();
+  const link = (href: string) => localizePath(href, locale);
+
   return (
     <section className="shell section-tight">
       <div className="max-w-2xl">
-        <Eyebrow>Annuaire</Eyebrow>
-        <h1 className="mt-6 text-[clamp(2.2rem,5vw,3.4rem)]">
-          Établissements et professionnels
-        </h1>
-        <p className="lede mt-6">
-          Une liste consultée n&apos;est pas une recommandation. Ici, aucun score : chaque
-          fiche indique ce qui a été vérifié, et ce qui reste déclaratif.
-        </p>
+        <Eyebrow>{t.directory.eyebrow}</Eyebrow>
+        <h1 className="mt-6 text-[clamp(2.2rem,5vw,3.4rem)]">{t.directory.title}</h1>
+        <p className="lede mt-6">{t.directory.lede}</p>
       </div>
 
       <div className="mt-8">
-        <DemoBadge label="Catalogue de démonstration — établissements fictifs" />
+        <DemoBadge label={t.directory.demoLabel} />
       </div>
 
       <div className="mt-10 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-        {FACILITIES.map((facility) => {
-          const destination = DESTINATION_BY_SLUG.get(facility.destinationSlug);
+        {FACILITIES.map((raw) => {
+          const facility = localizedFacility(raw, locale);
+          const found = DESTINATION_BY_SLUG.get(facility.destinationSlug);
+          const destination = found ? localizedDestination(found, locale) : undefined;
           const team = PROFESSIONALS.filter((professional) => professional.facilityId === facility.id);
 
           return (
             <article key={facility.id} className="card flex flex-col p-6">
               <div className="flex flex-wrap items-center gap-2">
-                <span className="badge">{FACILITY_KIND_LABEL[facility.kind]}</span>
+                <span className="badge">{t.facilityKinds[facility.kind]}</span>
                 <VerificationBadge verification={facility.verification} />
               </div>
 
@@ -47,26 +49,26 @@ export default function ProfessionnelsPage() {
 
               <dl className="mt-5 space-y-1.5 border-t pt-4 text-[0.78rem]" style={{ borderColor: "var(--border)" }}>
                 <div className="flex gap-2">
-                  <dt className="faint">Langues</dt>
+                  <dt className="faint">{t.directory.languages}</dt>
                   <dd>{facility.languages.join(", ")}</dd>
                 </div>
                 {team.length > 0 && (
                   <div className="flex gap-2">
-                    <dt className="faint">Praticiens</dt>
+                    <dt className="faint">{t.directory.practitioners}</dt>
                     <dd>{team.length}</dd>
                   </div>
                 )}
                 <div className="flex gap-2">
-                  <dt className="faint">International</dt>
-                  <dd>{facility.internationalPatients ? "Oui" : "Non déclaré"}</dd>
+                  <dt className="faint">{t.directory.international}</dt>
+                  <dd>{facility.internationalPatients ? t.directory.yes : t.directory.notDeclared}</dd>
                 </div>
               </dl>
 
               <Link
-                href={`/professionnels/${facility.slug}`}
+                href={link(`/professionnels/${facility.slug}`)}
                 className="btn btn-quiet mt-4 self-start text-[0.82rem]"
               >
-                Voir la fiche
+                {t.common.seeSheet}
                 <ArrowRight size={14} />
               </Link>
             </article>

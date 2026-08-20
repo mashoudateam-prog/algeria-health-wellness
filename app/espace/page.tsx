@@ -9,20 +9,29 @@ import {
   DEMO_PATIENT,
 } from "@/data/demo-account";
 import { formatDZD } from "@/lib/ai/quote";
+import { LOCALE_TAG, localizePath } from "@/lib/i18n/config";
+import { localizedDemoAccount } from "@/lib/i18n/content";
+import { getTranslation } from "@/lib/i18n/server";
 
-export const metadata: Metadata = {
-  title: "Mon espace",
-  description:
-    "Votre parcours, vos rendez-vous, vos documents et votre budget, réunis en un seul endroit.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await getTranslation();
+  return { title: t.meta.space.title, description: t.meta.space.description };
+}
 
-const DATE_FORMAT = new Intl.DateTimeFormat("fr-FR", {
-  day: "numeric",
-  month: "long",
-});
+export default async function EspacePage() {
+  const { locale, t } = await getTranslation();
+  const link = (href: string) => localizePath(href, locale);
+  const dateFormat = new Intl.DateTimeFormat(LOCALE_TAG[locale], {
+    day: "numeric",
+    month: "long",
+  });
+  const formatDate = (iso: string) => dateFormat.format(new Date(`${iso}T00:00:00Z`));
 
-export default function EspacePage() {
-  const nextAppointment = DEMO_APPOINTMENTS[0];
+  const { journey, appointments } = localizedDemoAccount(
+    { journey: DEMO_JOURNEY, appointments: DEMO_APPOINTMENTS },
+    locale,
+  );
+  const nextAppointment = appointments[0];
   const activeShares = DEMO_DOCUMENTS.reduce(
     (total, document) => total + document.shares.filter((share) => share.revokedAt === null).length,
     0,
@@ -32,10 +41,12 @@ export default function EspacePage() {
     <section className="shell section-tight">
       <div className="flex flex-wrap items-end justify-between gap-5">
         <div>
-          <p className="eyebrow eyebrow-line">Votre espace</p>
-          <h1 className="mt-5 text-[clamp(2rem,4.4vw,3rem)]">Bonjour {DEMO_PATIENT.firstName}</h1>
+          <p className="eyebrow eyebrow-line">{t.space.eyebrow}</p>
+          <h1 className="mt-5 text-[clamp(2rem,4.4vw,3rem)]">
+            {t.space.hello(DEMO_PATIENT.firstName)}
+          </h1>
         </div>
-        <DemoBadge label="Compte de démonstration" />
+        <DemoBadge label={t.space.demoLabel} />
       </div>
 
       {/* Parcours */}
@@ -43,15 +54,17 @@ export default function EspacePage() {
         className="mt-10 rounded-[32px] p-7 sm:p-9"
         style={{ background: "var(--surface-deep)", color: "#fff" }}
       >
-        <p className="text-[0.62rem] uppercase tracking-[0.26em] text-white/40">Votre parcours</p>
-        <h2 className="mt-3 text-[clamp(1.5rem,3.4vw,2.3rem)]">{DEMO_JOURNEY.title}</h2>
+        <p className="text-[0.62rem] uppercase tracking-[0.26em] text-white/40">
+          {t.space.yourJourney}
+        </p>
+        <h2 className="mt-3 text-[clamp(1.5rem,3.4vw,2.3rem)]">{journey.title}</h2>
         <p className="mt-2.5 text-[0.9rem] text-white/55">
-          Du {formatDate(DEMO_JOURNEY.startsOn)} au {formatDate(DEMO_JOURNEY.endsOn)}
+          {t.space.dates(formatDate(journey.startsOn), formatDate(journey.endsOn))}
         </p>
 
         <ol className="mt-9 grid gap-3 sm:grid-cols-3 lg:grid-cols-6">
-          {DEMO_JOURNEY.phases.map((phase) => {
-            const current = phase.key === DEMO_JOURNEY.currentPhase;
+          {journey.phases.map((phase) => {
+            const current = phase.key === journey.currentPhase;
             return (
               <li key={phase.key}>
                 <div
@@ -71,15 +84,15 @@ export default function EspacePage() {
                   {phase.label}
                 </p>
                 {current && (
-                  <p className="mt-0.5 text-[0.68rem] text-white/45">En cours</p>
+                  <p className="mt-0.5 text-[0.68rem] text-white/45">{t.space.inProgress}</p>
                 )}
               </li>
             );
           })}
         </ol>
 
-        <Link href="/parcours" className="btn btn-accent mt-8">
-          Reprendre la planification
+        <Link href={link("/parcours")} className="btn btn-accent mt-8">
+          {t.space.resume}
           <ArrowRight size={15} />
         </Link>
       </div>
@@ -89,7 +102,7 @@ export default function EspacePage() {
         <article className="card p-6">
           <CalendarDays size={20} strokeWidth={1.6} style={{ color: "var(--accent)" }} />
           <h2 className="mt-3.5 text-[0.66rem] uppercase tracking-[0.2em] faint">
-            Prochain rendez-vous
+            {t.space.nextAppointment}
           </h2>
           <p className="mt-2.5 text-[1.02rem] leading-snug">{nextAppointment.title}</p>
           <p className="mt-1.5 text-[0.84rem] muted">
@@ -103,12 +116,10 @@ export default function EspacePage() {
           <h2 className="mt-3.5 text-[0.66rem] uppercase tracking-[0.2em] faint">
             Health Passport
           </h2>
-          <p className="mt-2.5 text-[1.02rem]">{DEMO_DOCUMENTS.length} documents</p>
-          <p className="mt-1.5 text-[0.84rem] muted">
-            {activeShares} partage{activeShares > 1 ? "s" : ""} actif{activeShares > 1 ? "s" : ""}
-          </p>
-          <Link href="/espace/documents" className="btn btn-quiet mt-3 text-[0.82rem]">
-            Gérer mes documents
+          <p className="mt-2.5 text-[1.02rem]">{t.space.documentsCount(DEMO_DOCUMENTS.length)}</p>
+          <p className="mt-1.5 text-[0.84rem] muted">{t.space.activeShares(activeShares)}</p>
+          <Link href={link("/espace/documents")} className="btn btn-quiet mt-3 text-[0.82rem]">
+            {t.space.manageDocuments}
             <ArrowRight size={13} />
           </Link>
         </article>
@@ -116,24 +127,22 @@ export default function EspacePage() {
         <article className="card p-6">
           <Wallet size={20} strokeWidth={1.6} style={{ color: "var(--accent)" }} />
           <h2 className="mt-3.5 text-[0.66rem] uppercase tracking-[0.2em] faint">
-            Budget estimé
+            {t.space.estimatedBudget}
           </h2>
           <p className="mt-2.5 text-[1.02rem] tabular-nums">
             {formatDZD(268_000)} – {formatDZD(447_000)}
           </p>
-          <p className="mt-1.5 text-[0.8rem] leading-5 faint">
-            Estimation indicative, hors devis professionnel.
-          </p>
+          <p className="mt-1.5 text-[0.8rem] leading-5 faint">{t.space.estimateNotice}</p>
         </article>
 
         <article className="card p-6">
           <MessageCircle size={20} strokeWidth={1.6} style={{ color: "var(--accent)" }} />
-          <h2 className="mt-3.5 text-[0.66rem] uppercase tracking-[0.2em] faint">Concierge</h2>
-          <p className="mt-2.5 text-[0.9rem] leading-6 muted">
-            Une question sur l&apos;organisation, les documents ou le déroulement ?
-          </p>
-          <Link href="/concierge" className="btn btn-quiet mt-3 text-[0.82rem]">
-            Ouvrir le concierge
+          <h2 className="mt-3.5 text-[0.66rem] uppercase tracking-[0.2em] faint">
+            {t.nav.concierge}
+          </h2>
+          <p className="mt-2.5 text-[0.9rem] leading-6 muted">{t.space.conciergeBody}</p>
+          <Link href={link("/concierge")} className="btn btn-quiet mt-3 text-[0.82rem]">
+            {t.home.conciergeOpen}
             <ArrowRight size={13} />
           </Link>
         </article>
@@ -141,9 +150,9 @@ export default function EspacePage() {
 
       {/* Agenda */}
       <div className="mt-14">
-        <h2 className="text-[clamp(1.5rem,3vw,2.1rem)]">Votre agenda</h2>
+        <h2 className="text-[clamp(1.5rem,3vw,2.1rem)]">{t.space.agenda}</h2>
         <ol className="mt-7 space-y-3">
-          {DEMO_APPOINTMENTS.map((appointment) => (
+          {appointments.map((appointment) => (
             <li key={appointment.id} className="card grid gap-4 p-5 sm:grid-cols-[7.5rem_1fr]">
               <div>
                 <p className="text-[0.84rem]">{formatDate(appointment.date)}</p>
@@ -159,15 +168,7 @@ export default function EspacePage() {
         </ol>
       </div>
 
-      <p className="mt-12 max-w-3xl text-[0.82rem] leading-6 faint">
-        Cet espace fonctionne actuellement sur un compte de démonstration : aucune
-        authentification n&apos;est branchée et les données ne sont pas persistées. Les
-        informations affichées sont fictives.
-      </p>
+      <p className="mt-12 max-w-3xl text-[0.82rem] leading-6 faint">{t.space.demoNotice}</p>
     </section>
   );
-}
-
-function formatDate(iso: string): string {
-  return DATE_FORMAT.format(new Date(`${iso}T00:00:00Z`));
 }

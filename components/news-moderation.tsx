@@ -124,7 +124,7 @@ export function NewsModeration() {
           Charger
         </button>
         <button type="button" onClick={collect} disabled={busy} className="btn btn-primary">
-          Lancer une collecte
+          Run a collection · Lancer une collecte
         </button>
       </div>
 

@@ -5,12 +5,10 @@ import { notFound } from "next/navigation";
 import { Eyebrow } from "@/components/badges";
 import { ImmersiveSlot } from "@/components/immersive-slot";
 import { DESTINATION_BY_SLUG } from "@/data/destinations";
-import {
-  HERITAGE_BY_SLUG,
-  HERITAGE_EFFORT_LABEL,
-  HERITAGE_SITES,
-  heritageNear,
-} from "@/data/heritage";
+import { HERITAGE_BY_SLUG, HERITAGE_SITES, heritageNear } from "@/data/heritage";
+import { localizePath } from "@/lib/i18n/config";
+import { heritageEffortLabel, localizedHeritage } from "@/lib/i18n/content";
+import { fill, getTranslation } from "@/lib/i18n/server";
 
 export function generateStaticParams() {
   return HERITAGE_SITES.map((site) => ({ slug: site.slug }));
@@ -22,18 +20,26 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const site = HERITAGE_BY_SLUG.get(slug);
-  if (!site) return { title: "Site introuvable" };
+  const found = HERITAGE_BY_SLUG.get(slug);
+  const { locale } = await getTranslation();
+  if (!found) return { title: locale === "en" ? "Site not found" : "Site introuvable" };
+  const site = localizedHeritage(found, locale);
   return { title: site.name, description: site.summary };
 }
 
 export default async function HeritagePage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const site = HERITAGE_BY_SLUG.get(slug);
-  if (!site) notFound();
+  const found = HERITAGE_BY_SLUG.get(slug);
+  if (!found) notFound();
+
+  const { locale, t } = await getTranslation();
+  const link = (href: string) => localizePath(href, locale);
+  const site = localizedHeritage(found, locale);
 
   const destination = DESTINATION_BY_SLUG.get(site.nearestDestination);
-  const nearby = heritageNear(site.nearestDestination).filter((entry) => entry.slug !== site.slug);
+  const nearby = heritageNear(site.nearestDestination)
+    .filter((entry) => entry.slug !== site.slug)
+    .map((entry) => localizedHeritage(entry, locale));
 
   return (
     <>
@@ -46,16 +52,18 @@ export default async function HeritagePage({ params }: { params: Promise<{ slug:
             {site.kind === "unesco" ? (
               <span className="badge badge-verified">
                 <Landmark size={12} />
-                Patrimoine mondial depuis {site.inscribedIn}
+                UNESCO {site.inscribedIn}
               </span>
             ) : (
-              <span className="badge">Site majeur</span>
+              <span className="badge">{t.heritage.majorSite}</span>
             )}
             <span className="badge">
               <Timer size={12} />
-              {site.hours >= 24 ? `${Math.round(site.hours / 24)} jours` : `${site.hours} h`}
+              {site.hours >= 24
+                ? `${Math.round(site.hours / 24)} ${t.common.days}`
+                : `${site.hours} ${t.common.hours}`}
             </span>
-            <span className="badge">{HERITAGE_EFFORT_LABEL[site.effort]}</span>
+            <span className="badge">{heritageEffortLabel(site.effort, t)}</span>
           </div>
 
           <p className="mt-7 text-[clamp(1.02rem,1.7vw,1.24rem)] leading-8 muted">{site.summary}</p>
@@ -71,7 +79,7 @@ export default async function HeritagePage({ params }: { params: Promise<{ slug:
       <section className="shell pb-16">
         <div className="grid gap-12 lg:grid-cols-[1.25fr_0.75fr] lg:gap-16">
           <div>
-            <h2 className="text-[clamp(1.5rem,3vw,2.1rem)]">Ce que l&apos;on y voit</h2>
+            <h2 className="text-[clamp(1.5rem,3vw,2.1rem)]">{t.heritage.whatYouSee}</h2>
             <ul className="mt-6 space-y-3">
               {site.highlights.map((highlight) => (
                 <li key={highlight} className="card-soft px-5 py-4 text-[0.92rem] leading-6">
@@ -82,7 +90,7 @@ export default async function HeritagePage({ params }: { params: Promise<{ slug:
 
             {site.bestSeason && (
               <>
-                <h2 className="mt-12 text-[clamp(1.5rem,3vw,2.1rem)]">Quand y aller</h2>
+                <h2 className="mt-12 text-[clamp(1.5rem,3vw,2.1rem)]">{t.heritage.whenToGo}</h2>
                 <p className="mt-4 leading-7 muted">{site.bestSeason}</p>
               </>
             )}
@@ -91,68 +99,71 @@ export default async function HeritagePage({ params }: { params: Promise<{ slug:
           <aside className="lg:sticky lg:top-28 lg:h-fit">
             <div className="card p-6">
               <h2 className="text-[0.66rem] uppercase tracking-[0.22em] faint">
-                Depuis votre séjour
+                {t.heritage.fromYourStay}
               </h2>
 
               <dl className="mt-4 space-y-3.5 text-[0.88rem]">
                 <div>
-                  <dt className="faint">Destination la plus proche</dt>
+                  <dt className="faint">{t.heritage.nearestDestination}</dt>
                   <dd className="mt-0.5 flex items-center gap-2">
                     <MapPin size={14} />
                     {destination?.name ?? site.wilayaName}
                   </dd>
                 </div>
                 <div>
-                  <dt className="faint">Distance</dt>
+                  <dt className="faint">{t.heritage.distance}</dt>
                   <dd className="mt-0.5">
-                    {site.distanceKm === 0 ? "Sur place" : `Environ ${site.distanceKm} km`}
+                    {site.distanceKm === 0 ? t.heritage.onSite : `${site.distanceKm} km`}
                   </dd>
                 </div>
                 <div>
-                  <dt className="faint">À prévoir</dt>
+                  <dt className="faint">{t.heritage.plan}</dt>
                   <dd className="mt-0.5">
                     {site.hours >= 24
-                      ? `${Math.round(site.hours / 24)} jours, expédition organisée`
-                      : `${site.hours} heures sur place`}
+                      ? fill(t.heritage.daysOrganised, { days: Math.round(site.hours / 24) })
+                      : fill(t.heritage.hoursOnSite, { hours: site.hours })}
                   </dd>
                 </div>
               </dl>
 
               <Link
-                href={`/parcours?q=${encodeURIComponent(
-                  `Un séjour à ${destination?.name ?? site.wilayaName} avec la visite de ${site.name}`,
-                )}`}
+                href={link(
+                  `/parcours?q=${encodeURIComponent(
+                    locale === "en"
+                      ? `A stay in ${destination?.name ?? site.wilayaName}, visiting ${site.name}`
+                      : `Un séjour à ${destination?.name ?? site.wilayaName} avec la visite de ${site.name}`,
+                  )}`,
+                )}
                 className="btn btn-primary mt-6 w-full"
               >
                 <Sparkles size={15} />
-                Intégrer à un parcours
+                {t.heritage.addToJourney}
               </Link>
 
               {destination && (
                 <Link
-                  href={`/destinations/${destination.slug}`}
+                  href={link(`/destinations/${destination.slug}`)}
                   className="btn btn-ghost mt-2.5 w-full"
                 >
-                  Découvrir {destination.name}
+                  {t.common.readMore} — {destination.name}
                 </Link>
               )}
             </div>
 
             <p className="mt-4 text-[0.76rem] leading-5 faint">
-              Horaires et tarifs non affichés : ils changent et nous ne les avons pas à
-              jour. Vérifiez auprès du site avant de vous déplacer.
+              {t.heritage.hoursNotice}
             </p>
           </aside>
         </div>
 
         {nearby.length > 0 && (
           <div className="mt-16">
-            <h2 className="text-[clamp(1.5rem,3vw,2.1rem)]">À proximité</h2>
+            <h2 className="text-[clamp(1.5rem,3vw,2.1rem)]">{t.heritage.nearby}</h2>
             <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
               {nearby.slice(0, 3).map((entry) => (
                 <Link
                   key={entry.slug}
-                  href={`/patrimoine/${entry.slug}`}
+                  href={link(`/patrimoine/${entry.slug}`)}
                   className="card p-6 transition-transform hover:-translate-y-0.5"
                 >
                   {entry.kind === "unesco" && (
@@ -166,11 +177,13 @@ export default async function HeritagePage({ params }: { params: Promise<{ slug:
                     {entry.summary.split(".")[0]}.
                   </p>
                   <p className="mt-3 text-[0.78rem] faint">
-                    {entry.distanceKm === 0 ? "Sur place" : `${entry.distanceKm} km`} ·{" "}
-                    {entry.hours >= 24 ? `${Math.round(entry.hours / 24)} j` : `${entry.hours} h`}
+                    {entry.distanceKm === 0 ? t.heritage.onSite : `${entry.distanceKm} km`} ·{" "}
+                    {entry.hours >= 24
+                      ? `${Math.round(entry.hours / 24)} ${t.common.days}`
+                      : `${entry.hours} ${t.common.hours}`}
                   </p>
                   <span className="btn btn-quiet mt-3 text-[0.82rem]">
-                    Découvrir
+                    {t.common.readMore}
                     <ArrowRight size={13} />
                   </span>
                 </Link>

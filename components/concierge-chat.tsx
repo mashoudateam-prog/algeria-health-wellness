@@ -2,21 +2,19 @@
 
 import { Info, Send, Sparkles } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "@/components/i18n-provider";
+import { conciergeText } from "@/lib/ai/concierge-text";
 import type { ConciergeMessage } from "@/types/domain";
 
-const OPENING: ConciergeMessage = {
-  role: "concierge",
-  content:
-    "Bonjour. Je peux vous aider à préparer un séjour de santé, de bien-être ou de remise en forme en Algérie : comprendre l'offre, organiser les rendez-vous, préparer vos documents, ou construire un parcours. Que souhaitez-vous faire ?",
-  suggestions: [
-    "Je veux venir une semaine pour prendre soin de moi",
-    "Quels documents dois-je préparer ?",
-    "Comment fonctionne le partage de mes documents ?",
-  ],
-};
-
 export function ConciergeChat() {
-  const [messages, setMessages] = useState<ConciergeMessage[]>([OPENING]);
+  const { locale, t } = useTranslation();
+  const opening: ConciergeMessage = {
+    role: "concierge",
+    content: conciergeText(locale).opening.answer,
+    suggestions: conciergeText(locale).opening.suggestions,
+  };
+
+  const [messages, setMessages] = useState<ConciergeMessage[]>([opening]);
   const [draft, setDraft] = useState("");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
@@ -44,15 +42,16 @@ export function ConciergeChat() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           message,
+          locale,
           history: history.map((entry) => ({ role: entry.role, content: entry.content })),
         }),
       });
 
       const payload = await response.json();
-      if (!response.ok) throw new Error(payload?.error ?? "Réponse indisponible.");
+      if (!response.ok) throw new Error(payload?.error ?? t.chat.unavailable);
       setMessages((current) => [...current, payload.reply as ConciergeMessage]);
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Réponse indisponible.");
+      setError(caught instanceof Error ? caught.message : t.chat.unavailable);
     } finally {
       setPending(false);
       inputRef.current?.focus();
@@ -72,8 +71,8 @@ export function ConciergeChat() {
           <Sparkles size={16} />
         </span>
         <div>
-          <p className="text-[0.92rem] font-medium">Concierge santé</p>
-          <p className="text-[0.72rem] faint">Assistant de parcours — ne remplace pas un professionnel</p>
+          <p className="text-[0.92rem] font-medium">{t.chat.title}</p>
+          <p className="text-[0.72rem] faint">{t.chat.subtitle}</p>
         </div>
       </header>
 
@@ -127,8 +126,8 @@ export function ConciergeChat() {
         ))}
 
         {pending && (
-          <p className="text-[0.84rem] faint" aria-label="Le concierge rédige une réponse">
-            Le concierge réfléchit…
+          <p className="text-[0.84rem] faint" aria-label={t.chat.writingAria}>
+            {t.chat.thinking}
           </p>
         )}
 
@@ -151,7 +150,7 @@ export function ConciergeChat() {
       >
         <div className="flex items-end gap-3">
           <label htmlFor="message-concierge" className="sr-only">
-            Votre message
+            {t.chat.yourMessage}
           </label>
           <textarea
             id="message-concierge"
@@ -166,22 +165,19 @@ export function ConciergeChat() {
             }}
             rows={1}
             maxLength={1500}
-            placeholder="Écrivez votre message…"
+            placeholder={t.chat.placeholder}
             className="field max-h-32 flex-1 resize-none py-3"
           />
           <button
             type="submit"
             disabled={pending || draft.trim().length === 0}
             className="btn btn-primary shrink-0 px-4"
-            aria-label="Envoyer"
+            aria-label={t.chat.send}
           >
             <Send size={16} />
           </button>
         </div>
-        <p className="mt-2.5 text-[0.72rem] leading-5 faint">
-          N&apos;indiquez pas d&apos;informations que vous ne souhaitez pas transmettre. En
-          cas d&apos;urgence, contactez les secours : Protection civile 14, SAMU 115.
-        </p>
+        <p className="mt-2.5 text-[0.72rem] leading-5 faint">{t.chat.privacyNotice}</p>
       </form>
     </div>
   );
