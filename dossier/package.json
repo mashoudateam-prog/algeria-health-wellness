@@ -1,0 +1,11 @@
+{
+  "name": "algeria-health-wellness-dossier",
+  "private": true,
+  "description": "Fabrication des PDF du dossier de candidature. Dépendance isolée de l'application : pdf-lib ne sert qu'à estampiller le pied de page.",
+  "scripts": {
+    "build": "node build.cjs"
+  },
+  "dependencies": {
+    "pdf-lib": "^1.17.1"
+  }
+}
