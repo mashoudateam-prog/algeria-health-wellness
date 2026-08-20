@@ -10,8 +10,8 @@
 | **Contact** | mashouda.team@gmail.com |
 | **Nature** | Plateforme web — prototype fonctionnel déployé |
 | **Dépôt de code** | `github.com/mashoudateam-prog/algeria-health-wellness` |
-| **Langues** | Français, Anglais (architecture prête pour 7 langues supplémentaires) |
-| **État** | 18 pages, 5 API, 44 tests automatisés, build de production validé |
+| **Langues** | Français, Anglais, **Arabe** — dont le sens droite-à-gauche |
+| **État** | 19 pages, 6 API, 56 tests automatisés, build de production validé |
 
 ---
 
@@ -89,10 +89,12 @@ L'immersion sert le parcours, elle ne le remplace pas. Chaque destination et cha
 - Concierge conversationnel avec garde-fous en sortie et détection d'urgence
 - 8 destinations, 12 sites patrimoniaux, 6 types de séjours, 22 fiches de démonstration — stations thermales, spas, centres de remise en forme, salles de sport
 - Carte santé vectorielle filtrable, fil d'actualité alimenté par un agent de veille avec modération humaine obligatoire, Health Passport avec partage temporaire et journal d'accès
-- Français et anglais intégraux — y compris le parcours généré, les justifications de recommandation, les mentions réglementaires et la compréhension du langage naturel dans les deux langues
-- 44 tests automatisés, dont 10 portent exclusivement sur les garde-fous
+- Trois langues, dont l'arabe et son sens droite-à-gauche — le parcours généré, les justifications, les mentions réglementaires et la compréhension du langage naturel suivent la langue du visiteur
+- Comptes et rôles : visiteur, partenaire, modérateur, administrateur. Mot de passe dérivé par scrypt, session en cookie `httpOnly` dont seule l'empreinte est conservée
+- Persistance PostgreSQL optionnelle : avec une base, les décisions de modération survivent au redéploiement et le dédoublonnage est arbitré par deux index uniques
+- 56 tests automatisés, dont 10 sur les garde-fous et 12 exécutés contre un vrai moteur PostgreSQL
 
-**Prochains jalons :** persistance en base de données, authentification et gestion des rôles, intégration des sept langues restantes, conventionnement des premières stations thermales réelles.
+**Prochains jalons :** relecture de l'arabe par un locuteur natif, intégration des six langues restantes, captation des panoramas des stations, conventionnement des premières stations thermales réelles.
 
 ---
 

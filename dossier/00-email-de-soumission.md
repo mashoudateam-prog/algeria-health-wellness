@@ -22,7 +22,7 @@ Trois éléments nous semblent mériter votre attention particulière :
 
 **Aucune eau thermale n'est présentée comme un traitement.** Les stations sont décrites comme des lieux de détente et de récupération. Le filtre de sortie bloque diagnostic, prescription, promesse de résultat et prix garanti, sur chaque réponse et quelle que soit son origine. Cette retenue n'est pas juridique : c'est ce qui rend la filière crédible face à la Tunisie et au Maroc.
 
-**Le prototype est fonctionnel et entièrement vérifiable.** Il fonctionne **sans aucune clé d'API** : le jury peut cloner le dépôt, lancer les 44 tests et construire ses propres parcours, hors ligne. Le site est disponible intégralement en français et en anglais — y compris le parcours généré lui-même, ses justifications et ses mentions réglementaires.
+**Le prototype est fonctionnel et entièrement vérifiable.** Il fonctionne **sans aucune clé d'API** : le jury peut cloner le dépôt, lancer les 56 tests et construire ses propres parcours, hors ligne. Le site est disponible en français, en anglais et en arabe — y compris le parcours généré lui-même, ses justifications et ses mentions réglementaires. En arabe, la mise en page bascule de droite à gauche.
 
 Vous trouverez ci-joint les trois pièces du dossier :
 

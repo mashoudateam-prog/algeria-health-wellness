@@ -47,7 +47,7 @@
 
 **Étape 7 — Le budget.** Une estimation ventilée par poste : cure thermale, programme de remise en forme, spa et détente, hébergement, transferts, conciergerie. Jamais un prix.
 
-**Étape 8 — La bascule linguistique.** Passer en anglais : le parcours entier est reconstruit en anglais — titres d'étapes, justifications, libellés budgétaires, points de vigilance et mentions réglementaires comprises. **Ce n'est pas une traduction d'interface : c'est le moteur qui produit dans la langue du visiteur.**
+**Étape 8 — La bascule linguistique.** Passer en anglais, puis en arabe : le parcours entier est reconstruit — titres d'étapes, justifications, libellés budgétaires, points de vigilance et mentions réglementaires comprises. En arabe, la page bascule en outre de droite à gauche. **Ce n'est pas une traduction d'interface : c'est le moteur qui produit dans la langue du visiteur.**
 
 ---
 
@@ -65,6 +65,8 @@
 | **Garde-fous** | Filtre de sortie — `lib/ai/guardrails.ts` | 16 motifs interdits, détection de négation, détection d'urgence bilingue, mentions réglementaires. Appliqué **après** génération, sur tous les chemins. |
 | **IA conversationnelle** | LLM encadré + repli déterministe — `lib/ai/concierge.ts` | Concierge de séjour. Chaîne non court-circuitable : urgence → génération → filtre de sortie → mention réglementaire. |
 | **Couche fournisseur** | Interface `LlmProvider` agnostique, adaptateur Anthropic (`claude-opus-5`) — `lib/ai/provider.ts` | Permet de changer de fournisseur, ou de basculer vers un modèle souverain, sans toucher au produit. Optionnelle. |
+| **Persistance** | PostgreSQL derrière un contrat, pilote chargé à la demande — `lib/db/client.ts` | Avec `DATABASE_URL`, les décisions survivent au redéploiement et deux index uniques arbitrent le dédoublonnage. Sans elle, tout fonctionne en mémoire. |
+| **Comptes et rôles** | scrypt, session opaque en cookie `httpOnly` — `lib/auth/` | Quatre rôles en échelle. La politique de droits ne dépend ni des cookies ni de Next : elle est testable directement. |
 
 **Choix architectural déterminant :** l'IA générative comprend et converse ; elle ne décide jamais d'un enchaînement de séances. C'est ce qui rend le système reproductible, auditable et défendable.
 
@@ -99,7 +101,7 @@ Le fil couvre en priorité ce qui fait vivre la filière : ouvertures de centres
 | Style | Tailwind CSS v4 (`@theme`), design system maison |
 | Animation | Framer Motion |
 | Icônes | lucide-react |
-| Internationalisation | Réécriture par middleware (`/en/*` → `/*` + en-tête `x-locale`) — **une seule arborescence de pages**, aucune duplication possible entre langues |
+| Internationalisation | Réécriture par middleware (`/en/*`, `/ar/*` → `/*` + en-tête `x-locale`) — **une seule arborescence de pages**, aucune duplication possible entre langues. Sens droite-à-gauche porté par des propriétés logiques |
 | Typage des traductions | Le dictionnaire français est la source du type : une clé oubliée dans une autre langue est une **erreur de compilation**, pas une chaîne manquante découverte en production |
 | Tests | Runner natif Node 24 avec dépouillement de types TypeScript — aucune chaîne d'outils de test à maintenir |
 | Sécurité | En-têtes CSP stricts, `noindex` par défaut, limitation de débit par appelant, validation et re-typage de toutes les entrées d'API |
@@ -112,13 +114,13 @@ Le fil couvre en priorité ce qui fait vivre la filière : ouvertures de centres
 ```bash
 npm install
 npm run typecheck   # TypeScript strict — aucune erreur
-npm test            # 44 tests, 44 passants
+npm test            # 56 tests, 56 passants
 npm run build       # build de production validé
 ```
 
-**Volumétrie :** 85 fichiers de code, ~16 700 lignes, 18 pages, 5 routes d'API.
+**Volumétrie :** 95 fichiers de code, ~19 700 lignes, 19 pages, 6 routes d'API.
 
-**Répartition des 44 tests :**
+**Répartition des 56 tests :**
 
 | Domaine | Nombre | Exemples |
 |---|---|---|
@@ -126,6 +128,8 @@ npm run build       # build de production validé
 | Concierge conversationnel | 7 | *l'urgence court-circuite toute autre réponse* · *le concierge répond sur le budget sans passage censuré* |
 | Parcours et compréhension | 17 | *« cure thermale » ne déclenche pas d'acte médical* · *le séjour de remise en forme se termine par son plan de suite* · *le parcours généré suit la langue du visiteur* · *un nom de ville ne se reconnaît qu'entier* |
 | Agent de veille | 10 | *une source non vérifiable est refusée* · *les doublons sont écartés* · *les dates françaises sont lues, et rien n'est deviné* |
+| Persistance PostgreSQL | 6 | *le schéma se crée et un élément fait l'aller-retour* · *la base refuse le doublon, par URL comme par titre* — exécutés contre PGlite, PostgreSQL compilé en WebAssembly |
+| Comptes et rôles | 6 | *le mot de passe n'est jamais stocké en clair* · *la même adresse ne peut pas servir deux fois* · *la hiérarchie des rôles est une échelle* |
 
 **Deux tests qui méritent d'être montrés.**
 
@@ -159,9 +163,10 @@ Un dossier honnête énonce ce qui n'est pas fait :
 
 - **Le catalogue d'établissements est fictif** et signalé comme tel sur chaque fiche. Aucun établissement réel n'est nommé tant que des partenaires vérifiés ne sont pas conventionnés.
 - **Les montants sont des ordres de grandeur** destinés à la démonstration. En production, chaque ligne doit être alimentée par une grille fournie et datée par le partenaire, ou masquée.
-- **La persistance n'est pas branchée.** Décisions de modération et parcours vivent en mémoire du processus et ne survivent pas à un redéploiement.
-- **L'authentification n'est pas branchée.** L'espace personnel fonctionne sur un compte de démonstration ; la page de modération est protégée par un jeton partagé.
+- **La persistance est optionnelle.** Sans `DATABASE_URL`, le fil et les décisions vivent en mémoire du processus et ne survivent pas à un redéploiement — et la page de modération l'affiche. Avec une base, ils survivent.
+- **L'espace personnel reste un compte de démonstration.** L'authentification existe et protège la modération ; elle n'est pas encore raccordée aux données de l'espace.
+- **L'arabe attend une relecture par un locuteur natif**, les mentions réglementaires en premier. Le corps éditorial des fiches destination et d'établissement y retombe volontairement sur le français.
 - **Les panoramas des stations thermales restent à capter.** Le dispositif immersif est en place et fonctionne ; il attend les prises de vue réelles.
-- **Sept des neuf langues annoncées restent à intégrer.** L'architecture est en place et typée pour les recevoir ; le français et l'anglais sont complets.
+- **Six des neuf langues annoncées restent à intégrer.** L'architecture est en place et typée pour les recevoir ; le français, l'anglais et l'arabe sont livrés.
 
 Aucune de ces limites n'est masquée dans le produit : chacune est écrite à l'endroit où le visiteur pourrait s'y tromper.
