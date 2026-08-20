@@ -6,7 +6,10 @@ import {
   rateLimit,
   readJsonBody,
   readString,
+  validationMessage,
 } from "@/lib/security/request-guard";
+import { apiErrors, requestLocale } from "@/lib/security/errors";
+import { LOCALES, type Locale } from "@/lib/i18n/config";
 import type { ConciergeMessage } from "@/types/domain";
 
 export const runtime = "nodejs";
@@ -15,10 +18,12 @@ export const dynamic = "force-dynamic";
 const MAX_HISTORY = 10;
 
 export async function POST(request: NextRequest) {
+  let errors = apiErrors(requestLocale(request));
+
   const limit = rateLimit(callerKey(request, "concierge"), { limit: 20, windowMs: 60_000 });
   if (!limit.allowed) {
     return NextResponse.json(
-      { error: "Trop de messages en peu de temps. Reprenez dans un instant." },
+      { error: errors.tooManyMessages },
       { status: 429, headers: { "Retry-After": String(limit.retryAfterSeconds) } },
     );
   }
@@ -28,16 +33,21 @@ export async function POST(request: NextRequest) {
     const message = readString(body.message, "message", { min: 1, max: 1_500 });
 
     const history = parseHistory(body.history);
-    const reply = await askConcierge({ message, history });
+    // /api est hors du matcher du middleware : la langue arrive par le corps.
+    const locale: Locale = LOCALES.includes(body.locale as Locale)
+      ? (body.locale as Locale)
+      : requestLocale(request);
+    errors = apiErrors(locale);
+    const reply = await askConcierge({ message, history, locale });
 
     return NextResponse.json({ reply }, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     if (error instanceof ValidationError) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
+      return NextResponse.json({ error: validationMessage(error, errors) }, { status: 400 });
     }
     console.error("[concierge] échec de réponse", error);
     return NextResponse.json(
-      { error: "Le concierge n'a pas pu répondre. Réessayez, ou demandez un conseiller." },
+      { error: errors.conciergeFailed },
       { status: 500 },
     );
   }

@@ -1,4 +1,5 @@
 import type { NextRequest } from "next/server";
+import type { ApiErrors } from "./errors";
 
 /**
  * Contrôles d'entrée communs aux routes API.
@@ -76,7 +77,69 @@ export function callerKey(request: NextRequest, scope: string): string {
 /* Validation                                                          */
 /* ------------------------------------------------------------------ */
 
-export class ValidationError extends Error {}
+/**
+ * Erreur de validation portant un code, pas une phrase.
+ *
+ * Le garde ne connaît pas la langue de l'appelant — il est appelé avant même
+ * que le corps de la requête soit lu. Il décrit donc ce qui ne va pas, et la
+ * route rend la phrase dans la langue du visiteur.
+ */
+export type ValidationCode =
+  | "fieldMissing"
+  | "fieldInvalid"
+  | "fieldTooShort"
+  | "fieldTooLong"
+  | "valueNotAllowed"
+  | "unreadableBody"
+  | "goalOrProjectRequired"
+  | "linkScheme"
+  | "unknownWilaya"
+  | "unknownCategory"
+  | "badDateFormat"
+  | "duplicateLink"
+  | "unknownDecision";
+
+export class ValidationError extends Error {
+  constructor(
+    readonly code: ValidationCode,
+    readonly field = "",
+  ) {
+    super(`${code}:${field}`);
+    this.name = "ValidationError";
+  }
+}
+
+/** Rend une erreur de validation dans la langue de l'appelant. */
+export function validationMessage(error: ValidationError, errors: ApiErrors): string {
+  switch (error.code) {
+    case "fieldMissing":
+      return errors.fieldMissing(error.field);
+    case "fieldInvalid":
+      return errors.fieldInvalid(error.field);
+    case "fieldTooShort":
+      return errors.fieldTooShort(error.field);
+    case "fieldTooLong":
+      return errors.fieldTooLong(error.field);
+    case "valueNotAllowed":
+      return errors.valueNotAllowed(error.field);
+    case "unreadableBody":
+      return errors.unreadableBody;
+    case "goalOrProjectRequired":
+      return errors.goalOrProjectRequired;
+    case "linkScheme":
+      return errors.linkScheme;
+    case "unknownWilaya":
+      return errors.unknownWilaya;
+    case "unknownCategory":
+      return errors.unknownCategory;
+    case "badDateFormat":
+      return errors.badDateFormat;
+    case "duplicateLink":
+      return errors.duplicateLink;
+    case "unknownDecision":
+      return errors.unknownDecision;
+  }
+}
 
 /** Chaîne bornée. Rejette tout ce qui n'est pas une chaîne, y compris `null`. */
 export function readString(
@@ -85,14 +148,14 @@ export function readString(
   { min = 0, max = 1_000, required = true }: { min?: number; max?: number; required?: boolean } = {},
 ): string {
   if (value === undefined || value === null) {
-    if (required) throw new ValidationError(`Champ « ${field} » manquant.`);
+    if (required) throw new ValidationError("fieldMissing", field);
     return "";
   }
-  if (typeof value !== "string") throw new ValidationError(`Champ « ${field} » invalide.`);
+  if (typeof value !== "string") throw new ValidationError("fieldInvalid", field);
 
   const trimmed = value.trim();
-  if (trimmed.length < min) throw new ValidationError(`Champ « ${field} » trop court.`);
-  if (trimmed.length > max) throw new ValidationError(`Champ « ${field} » trop long.`);
+  if (trimmed.length < min) throw new ValidationError("fieldTooShort", field);
+  if (trimmed.length > max) throw new ValidationError("fieldTooLong", field);
   return trimmed;
 }
 
@@ -104,14 +167,14 @@ export function readEnumList<T extends string>(
   maxItems = 12,
 ): T[] {
   if (value === undefined || value === null) return [];
-  if (!Array.isArray(value)) throw new ValidationError(`Champ « ${field} » invalide.`);
-  if (value.length > maxItems) throw new ValidationError(`Champ « ${field} » trop long.`);
+  if (!Array.isArray(value)) throw new ValidationError("fieldInvalid", field);
+  if (value.length > maxItems) throw new ValidationError("fieldTooLong", field);
 
   const set = new Set<string>(allowed);
   const result: T[] = [];
   for (const entry of value) {
     if (typeof entry !== "string" || !set.has(entry)) {
-      throw new ValidationError(`Valeur non reconnue dans « ${field} ».`);
+      throw new ValidationError("valueNotAllowed", field);
     }
     if (!result.includes(entry as T)) result.push(entry as T);
   }
@@ -125,7 +188,7 @@ export function readInteger(
 ): number {
   if (value === undefined || value === null || value === "") return fallback;
   const parsed = typeof value === "number" ? value : Number(value);
-  if (!Number.isFinite(parsed)) throw new ValidationError(`Champ « ${field} » invalide.`);
+  if (!Number.isFinite(parsed)) throw new ValidationError("fieldInvalid", field);
   return Math.min(max, Math.max(min, Math.round(parsed)));
 }
 
@@ -133,15 +196,15 @@ export function readInteger(
 export async function readJsonBody(request: NextRequest, maxBytes = 32_000): Promise<unknown> {
   const declared = request.headers.get("content-length");
   if (declared && Number(declared) > maxBytes) {
-    throw new ValidationError("Charge utile trop volumineuse.");
+    throw new ValidationError("fieldTooLong", "body");
   }
 
   const raw = await request.text();
-  if (raw.length > maxBytes) throw new ValidationError("Charge utile trop volumineuse.");
+  if (raw.length > maxBytes) throw new ValidationError("fieldTooLong", "body");
 
   try {
     return JSON.parse(raw) as unknown;
   } catch {
-    throw new ValidationError("Corps de requête illisible.");
+    throw new ValidationError("unreadableBody");
   }
 }

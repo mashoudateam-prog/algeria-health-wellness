@@ -8,7 +8,9 @@ import {
   rateLimit,
   readJsonBody,
   readString,
+  validationMessage,
 } from "@/lib/security/request-guard";
+import { apiErrors, requestLocale } from "@/lib/security/errors";
 import type { NewsCategory, NewsItem } from "@/types/news";
 
 export const runtime = "nodejs";
@@ -40,13 +42,16 @@ export async function GET() {
  * empêche le fil de devenir un mur publicitaire.
  */
 export async function POST(request: NextRequest) {
+  // Le formulaire partenaire est public : ses erreurs suivent la langue lue.
+  const errors = apiErrors(requestLocale(request));
+
   const limit = rateLimit(callerKey(request, "actualites-soumission"), {
     limit: 5,
     windowMs: 600_000,
   });
   if (!limit.allowed) {
     return NextResponse.json(
-      { error: "Trop de soumissions successives. Réessayez plus tard." },
+      { error: errors.tooManySubmissions },
       { status: 429, headers: { "Retry-After": String(limit.retryAfterSeconds) } },
     );
   }
@@ -62,24 +67,24 @@ export async function POST(request: NextRequest) {
     const startsOn = readString(body.startsOn, "date", { max: 10, required: false });
 
     if (!/^https?:\/\//i.test(sourceUrl)) {
-      throw new ValidationError("Le lien doit commencer par http:// ou https://");
+      throw new ValidationError("linkScheme");
     }
 
     const wilaya = WILAYA_BY_CODE.get(wilayaCode);
-    if (!wilaya) throw new ValidationError("Wilaya inconnue.");
+    if (!wilaya) throw new ValidationError("unknownWilaya");
 
     const rawCategory = readString(body.category, "catégorie", { min: 3, max: 20 });
     if (!CATEGORIES.includes(rawCategory as NewsCategory)) {
-      throw new ValidationError("Catégorie non reconnue.");
+      throw new ValidationError("unknownCategory");
     }
 
     if (startsOn && !/^\d{4}-\d{2}-\d{2}$/.test(startsOn)) {
-      throw new ValidationError("La date doit être au format AAAA-MM-JJ.");
+      throw new ValidationError("badDateFormat");
     }
 
     const known = await newsStore.knownUrls();
     if (known.has(canonicalUrl(sourceUrl))) {
-      throw new ValidationError("Ce lien a déjà été soumis.");
+      throw new ValidationError("duplicateLink");
     }
 
     const item: NewsItem = {
@@ -112,9 +117,9 @@ export async function POST(request: NextRequest) {
     );
   } catch (error) {
     if (error instanceof ValidationError) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
+      return NextResponse.json({ error: validationMessage(error, errors) }, { status: 400 });
     }
     console.error("[actualites] soumission refusée", error);
-    return NextResponse.json({ error: "La soumission n'a pas pu être enregistrée." }, { status: 500 });
+    return NextResponse.json({ error: errors.submissionFailed }, { status: 500 });
   }
 }

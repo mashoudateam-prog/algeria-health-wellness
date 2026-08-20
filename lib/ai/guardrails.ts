@@ -9,6 +9,8 @@
  * prompt : un prompt se contourne, un filtre de sortie non.
  */
 
+import type { Locale } from "@/lib/i18n/config";
+
 export const MEDICAL_DISCLAIMER =
   "Cette recommandation est informative et ne constitue pas un diagnostic médical.";
 
@@ -17,6 +19,39 @@ export const PROFESSIONAL_NOTICE =
 
 export const QUOTE_DISCLAIMER =
   "Estimation indicative, hors devis professionnel. Les montants définitifs sont établis par l'établissement après évaluation.";
+
+/**
+ * Les mêmes mentions, dans la langue du visiteur.
+ *
+ * Ce sont les phrases qui portent la responsabilité : elles sont traduites
+ * mot pour mot, jamais adoucies. Les constantes françaises ci-dessus restent
+ * la référence du filtre de sortie, qui travaille sur le texte français.
+ */
+export const NOTICES: Record<
+  Locale,
+  { medical: string; professional: string; quote: string; urgency: string }
+> = {
+  fr: {
+    medical: MEDICAL_DISCLAIMER,
+    professional: PROFESSIONAL_NOTICE,
+    quote: QUOTE_DISCLAIMER,
+    urgency:
+      "Votre message évoque une situation qui peut être urgente. Cette plateforme n'est pas un service d'urgence et ne peut pas vous prendre en charge dans ce cadre. Contactez immédiatement les secours — en Algérie, Protection civile 14 ou SAMU 115 — ou rendez-vous au service d'urgence le plus proche.",
+  },
+  en: {
+    medical: "This information is provided for guidance only and does not constitute a medical diagnosis.",
+    professional:
+      "Only a qualified health professional can assess your situation and make a diagnosis.",
+    quote:
+      "Indicative estimate, not a professional quotation. Final amounts are set by the facility after assessment.",
+    urgency:
+      "Your message describes a situation that may be urgent. This platform is not an emergency service and cannot help you in that situation. Contact the emergency services immediately — in Algeria, Civil Protection 14 or SAMU 115 — or go to the nearest emergency department.",
+  },
+};
+
+export function notices(locale: Locale = "fr") {
+  return NOTICES[locale] ?? NOTICES.fr;
+}
 
 /* ------------------------------------------------------------------ */
 /* Détection d'urgence                                                 */
@@ -36,6 +71,20 @@ const URGENCY_PATTERNS: RegExp[] = [
   /\binfarctus\b/,
   /\bje veux mourir\b/,
   /\bsuicide\b/,
+  // Anglais. La détection ne dépend pas de la langue d'affichage : un visiteur
+  // peut basculer l'interface en anglais et écrire en français, ou l'inverse.
+  /\bemergency\b/,
+  /\bi(')?m bleeding\b|\bi am bleeding\b/,
+  /\b(severe|intense|unbearable) pain\b/,
+  /\bchest pain\b/,
+  /\b(can(')?t|cannot|unable to) breathe\b/,
+  /\b(difficulty|trouble) breathing\b/,
+  /\bshortness of breath\b/,
+  /\blost consciousness\b|\bpassed out\b|\bfainted\b/,
+  /\bparalysis\b|\bparalysed\b|\bparalyzed\b/,
+  /\bstroke\b/,
+  /\bheart attack\b/,
+  /\bi want to die\b|\bkill myself\b|\bend my life\b/,
 ];
 
 export interface UrgencySignal {
@@ -48,15 +97,10 @@ export interface UrgencySignal {
  * plateforme préfère un faux positif : rediriger vers les secours ne coûte rien,
  * l'inverse peut coûter cher.
  */
-export function detectUrgency(input: string): UrgencySignal {
+export function detectUrgency(input: string, locale: Locale = "fr"): UrgencySignal {
   const text = normalize(input);
   const detected = URGENCY_PATTERNS.some((pattern) => pattern.test(text));
-  return {
-    detected,
-    message: detected
-      ? "Votre message évoque une situation qui peut être urgente. Cette plateforme n'est pas un service d'urgence et ne peut pas vous prendre en charge dans ce cadre. Contactez immédiatement les secours — en Algérie, Protection civile 14 ou SAMU 115 — ou rendez-vous au service d'urgence le plus proche."
-      : "",
-  };
+  return { detected, message: detected ? notices(locale).urgency : "" };
 }
 
 /* ------------------------------------------------------------------ */
@@ -89,13 +133,16 @@ const FORBIDDEN: Array<{ pattern: RegExp; reason: string; negatable?: boolean }>
   // cure guérit ». Le motif porte donc sur le verbe, pas sur le sujet.
   { pattern: /\bgueri(t|ra|ssent|r)\b/, reason: "promesse de résultat", negatable: true },
   { pattern: /\bgueriso[n]? (garantie|assuree)\b/, reason: "promesse de résultat", negatable: true },
-  { pattern: /\b(soigne|soignera|soignent) (votre|vos|la|le|les|ce|cette)\b/, reason: "promesse de résultat", negatable: true },
-  { pattern: /\btraite (votre|vos) (maladie|pathologie|affection|probleme)\b/, reason: "promesse de résultat", negatable: true },
-  { pattern: /\b(elimine|evacue) les toxines\b/, reason: "allégation pseudo-scientifique", negatable: true },
-  { pattern: /\bfait disparaitre (votre|vos|la|le|les)\b/, reason: "promesse de résultat", negatable: true },
+  // Le sujet de la phrase est souvent au pluriel — « nos cures », « nos eaux »,
+  // « les bains ». Chaque verbe doit donc être reconnu aux deux nombres : une
+  // promesse au pluriel est exactement la même promesse.
+  { pattern: /\b(soigne|soignera|soignent|soigneront) (votre|vos|la|le|les|ce|cette)\b/, reason: "promesse de résultat", negatable: true },
+  { pattern: /\btraite(nt|ra|ront)? (votre|vos) (maladie|pathologie|affection|probleme)\b/, reason: "promesse de résultat", negatable: true },
+  { pattern: /\b(elimine|eliminent|evacue|evacuent) les toxines\b/, reason: "allégation pseudo-scientifique", negatable: true },
+  { pattern: /\b(fait|font|fera|feront) disparaitre (votre|vos|la|le|les)\b/, reason: "promesse de résultat", negatable: true },
   { pattern: /\b(100\s?%|cent pour cent) (garanti|efficace|sur)\b/, reason: "promesse de résultat", negatable: true },
-  { pattern: /\bprix garanti\b/, reason: "prix présenté comme garanti", negatable: true },
-  { pattern: /\bresultat garanti\b/, reason: "promesse de résultat", negatable: true },
+  { pattern: /\bprix garantis?\b/, reason: "prix présenté comme garanti", negatable: true },
+  { pattern: /\bresultats? garantis?\b/, reason: "promesse de résultat", negatable: true },
   { pattern: /\bsans risque\b/, reason: "minimisation du risque", negatable: true },
 ];
 

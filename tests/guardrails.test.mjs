@@ -70,3 +70,35 @@ test("le rappel réglementaire est disponible et non vide", () => {
   assert.ok(MEDICAL_DISCLAIMER.length > 20);
   assert.ok(MEDICAL_DISCLAIMER.includes("diagnostic"));
 });
+
+test("une promesse au pluriel est bloquée comme au singulier", () => {
+  // Le sujet publicitaire est presque toujours pluriel — « nos cures »,
+  // « nos eaux » — et la faille tenait à ce seul détail de conjugaison.
+  const pluriels = [
+    "Nos cures font disparaître vos douleurs.",
+    "Nos eaux feront disparaître vos douleurs.",
+    "Nos cures soignent votre arthrose.",
+    "Nos bains traitent votre pathologie.",
+    "Nos bains éliminent les toxines.",
+    "Résultats garantis en dix jours.",
+    "Prix garantis toute l'année.",
+  ];
+
+  for (const phrase of pluriels) {
+    const rapport = enforceGuardrails(phrase);
+    assert.equal(rapport.safe, false, `laissé passer : ${phrase}`);
+  }
+});
+
+test("le démenti d'une promesse au pluriel reste publiable", () => {
+  const dementis = [
+    "Nos cures ne font disparaître aucune douleur.",
+    "Nous n'affichons jamais de prix garantis.",
+    "Nos bains n'éliminent pas les toxines : cette allégation n'a pas de fondement.",
+  ];
+
+  for (const phrase of dementis) {
+    const rapport = enforceGuardrails(phrase);
+    assert.equal(rapport.safe, true, `censuré à tort : ${phrase} (${rapport.violations})`);
+  }
+});
