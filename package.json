@@ -20,12 +20,15 @@
     "framer-motion": "^13.1.0",
     "lucide-react": "^0.548.0",
     "next": "^15.5.4",
+    "pg": "^8.23.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.5.5",
     "@tailwindcss/postcss": "^4.1.13",
     "@types/node": "^22.15.3",
+    "@types/pg": "^8.23.1",
     "@types/react": "^19.1.0",
     "@types/react-dom": "^19.1.0",
     "tailwindcss": "^4.1.13",

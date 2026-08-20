@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { authorizeAdmin } from "@/lib/news/admin-auth";
-import { newsStore } from "@/lib/news/store";
+import { newsStore, storageMode } from "@/lib/news/store";
 import {
   ValidationError,
   callerKey,
@@ -47,7 +47,7 @@ export async function GET(request: NextRequest) {
   ]);
 
   return NextResponse.json(
-    { proposes, publies, rejetes, dernierPassage },
+    { proposes, publies, rejetes, dernierPassage, stockage: storageMode() },
     { headers: { "Cache-Control": "no-store" } },
   );
 }

@@ -3,14 +3,15 @@ import type { NewsItem, NewsStatus } from "@/types/news";
 /**
  * Entrepôt du fil d'actualité.
  *
- * ⚠️ Implémentation en mémoire du processus. Elle suffit à faire fonctionner
- * et démontrer toute la chaîne, mais elle ne persiste pas : sur un hébergement
- * sans état, chaque instance a la sienne et un redémarrage remet le compteur à
- * zéro. Les décisions de modération ne survivront donc pas au déploiement
- * suivant tant que la base PostgreSQL n'est pas branchée.
+ * Deux implémentations derrière un seul contrat.
  *
- * L'interface `NewsStore` existe précisément pour que ce remplacement ne
- * touche à rien d'autre : une implémentation Prisma, et le reste ne bouge pas.
+ * Avec `DATABASE_URL`, les décisions de modération survivent au déploiement
+ * et le dédoublonnage est arbitré par la base. Sans elle, l'entrepôt vit en
+ * mémoire du processus : la chaîne complète reste démontrable, mais rien ne
+ * survit à un redémarrage — et la page de modération le dit.
+ *
+ * Le choix se fait au démarrage et ne se devine pas : `storageMode()` le
+ * rend lisible depuis l'interface.
  */
 
 export interface NewsStore {
@@ -34,6 +35,7 @@ export interface CollectionRun {
 
 import { canonicalUrl } from "./pipeline";
 import { normalize } from "@/lib/ai/guardrails";
+import { databaseConfigured } from "@/lib/db/client";
 import { DEMO_NEWS } from "@/data/news-demo";
 
 class MemoryStore implements NewsStore {
@@ -99,11 +101,28 @@ class MemoryStore implements NewsStore {
   }
 }
 
+/** Ce sur quoi l'entrepôt repose réellement, pour l'afficher sans mentir. */
+export type StorageMode = "postgres" | "memoire";
+
+export function storageMode(): StorageMode {
+  return databaseConfigured() ? "postgres" : "memoire";
+}
+
 /**
  * En développement, le rechargement à chaud réinstancie les modules : sans
- * cette accroche sur l'objet global, l'entrepôt serait vidé à chaque édition.
+ * cette accroche sur l'objet global, l'entrepôt en mémoire serait vidé à
+ * chaque édition.
  */
 const globalForStore = globalThis as unknown as { __newsStore?: NewsStore };
 
-export const newsStore: NewsStore = globalForStore.__newsStore ?? new MemoryStore();
+function createStore(): NewsStore {
+  if (databaseConfigured()) {
+    // Import différé : sans base, le pilote n'est jamais chargé.
+    const { PostgresNewsStore } = require("./store-postgres") as typeof import("./store-postgres");
+    return new PostgresNewsStore();
+  }
+  return new MemoryStore();
+}
+
+export const newsStore: NewsStore = globalForStore.__newsStore ?? createStore();
 if (process.env.NODE_ENV !== "production") globalForStore.__newsStore = newsStore;

@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertTriangle, ArrowUpRight, Check, RefreshCw, X } from "lucide-react";
+import { AlertTriangle, ArrowUpRight, Check, Database, RefreshCw, X } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import type { CollectionRun } from "@/lib/news/store";
 import { NEWS_CATEGORY_LABEL, NEWS_ORIGIN_LABEL, type NewsItem } from "@/types/news";
@@ -21,6 +21,7 @@ interface Queue {
   publies: NewsItem[];
   rejetes: NewsItem[];
   dernierPassage: CollectionRun | null;
+  stockage: "postgres" | "memoire";
 }
 
 export function NewsModeration() {
@@ -134,6 +135,8 @@ export function NewsModeration() {
         </p>
       )}
       {notice && !error && <p className="mt-4 text-[0.88rem] muted">{notice}</p>}
+
+      {queue && <StockageBanner mode={queue.stockage} />}
 
       {queue?.dernierPassage && <RunReport run={queue.dernierPassage} />}
 
@@ -269,5 +272,42 @@ function RunReport({ run }: { run: CollectionRun }) {
         </div>
       </div>
     </div>
+  );
+}
+
+/**
+ * Sur quoi reposent les décisions prises ici.
+ *
+ * Un modérateur qui publie doit savoir si sa décision survivra au prochain
+ * déploiement. La mention est donc affichée avant la file, pas dans une
+ * documentation que personne n'ouvre.
+ */
+function StockageBanner({ mode }: { mode: "postgres" | "memoire" }) {
+  const persistant = mode === "postgres";
+  return (
+    <p
+      className="mt-4 flex items-start gap-2.5 rounded-2xl px-4 py-3 text-[0.84rem] leading-6"
+      style={
+        persistant
+          ? { background: "rgba(125,146,123,0.16)", color: "#2f5940" }
+          : { background: "rgba(154,104,69,0.1)", color: "#7a5a2e" }
+      }
+    >
+      <Database size={15} className="mt-1 shrink-0" />
+      <span>
+        {persistant ? (
+          <>
+            <strong>Base PostgreSQL connectée.</strong> Les décisions prises ici survivent
+            au redéploiement, et le dédoublonnage est arbitré par la base.
+          </>
+        ) : (
+          <>
+            <strong>Stockage en mémoire du processus.</strong> Les décisions prises ici ne
+            survivront pas au prochain déploiement. Renseignez <code>DATABASE_URL</code>{" "}
+            pour les conserver.
+          </>
+        )}
+      </span>
+    </p>
   );
 }
