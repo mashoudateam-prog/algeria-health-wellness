@@ -6,6 +6,13 @@
    Sobre, éditorial, hospitalier. Aucun gradient décoratif.
    ============================================================ */
 
+/* En arabe, la face latine cède la place : les deux familles ne partagent
+   ni les glyphes ni les proportions, et mélanger les deux se voit. */
+:root:lang(ar) {
+  --font-sans: var(--font-arabic), "Segoe UI", system-ui, sans-serif;
+  --font-display: var(--font-arabic), "Segoe UI", system-ui, sans-serif;
+}
+
 @theme {
   --color-ivory: #f7f4ee;
   --color-sand: #efe9dd;
@@ -298,7 +305,7 @@ button, input, textarea, select { font: inherit; color: inherit; }
 
   .skip-link {
     position: absolute;
-    left: 1rem;
+    inset-inline-start: 1rem;
     top: -5rem;
     z-index: 200;
     background: var(--primary);

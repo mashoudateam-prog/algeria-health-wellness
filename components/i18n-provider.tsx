@@ -2,6 +2,7 @@
 
 import { createContext, useContext, type ReactNode } from "react";
 import { DEFAULT_LOCALE, type Locale } from "@/lib/i18n/config";
+import { ar } from "@/lib/i18n/dictionaries/ar";
 import { en } from "@/lib/i18n/dictionaries/en";
 import { fr, type Dictionary } from "@/lib/i18n/dictionaries/fr";
 
@@ -17,7 +18,7 @@ import { fr, type Dictionary } from "@/lib/i18n/dictionaries/fr";
  * statique — ce serait payer cher une économie minuscule.
  */
 
-const DICTIONARIES: Record<Locale, Dictionary> = { fr, en };
+const DICTIONARIES: Record<Locale, Dictionary> = { fr, en, ar };
 
 const LocaleContext = createContext<Locale>(DEFAULT_LOCALE);
 

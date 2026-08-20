@@ -100,6 +100,11 @@ export const en: Dictionary = {
     conciergeBody:
       "The concierge answers practical questions at any hour. But some situations call for a voice rather than an interface — an adviser then takes over, whenever you ask.",
     conciergeOpen: "Open the concierge",
+    conciergeHelps: [
+      "Preparing the questions to put to the practitioner",
+      "Arranging arrival, transfers and accommodation",
+      "Finding activities that fit with recovery",
+    ],
   },
 
   phases: {

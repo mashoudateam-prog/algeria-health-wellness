@@ -47,6 +47,18 @@ export const NOTICES: Record<
     urgency:
       "Your message describes a situation that may be urgent. This platform is not an emergency service and cannot help you in that situation. Contact the emergency services immediately — in Algeria, Civil Protection 14 or SAMU 115 — or go to the nearest emergency department.",
   },
+  // ⚠️ Ces quatre phrases arabes portent la responsabilité de la plateforme.
+  // Elles doivent être relues par un locuteur natif avant toute mise en avant
+  // publique de cette langue — c'est la règle du projet, et elle vaut ici plus
+  // qu'ailleurs.
+  ar: {
+    medical: "هذه المعلومات إرشادية ولا تشكّل تشخيصًا طبيًا.",
+    professional: "لا يمكن تقييم حالتك ووضع تشخيص إلّا لمهني صحّة مؤهَّل.",
+    quote:
+      "تقدير إرشادي، لا عرض أسعار مهني. وتحدّد المؤسسة المبالغ النهائية بعد التقييم.",
+    urgency:
+      "تصف رسالتك حالة قد تكون استعجالية. هذه المنصّة ليست خدمة استعجالات ولا يمكنها التكفّل بك في هذا الإطار. اتّصل فورًا بالإسعاف — في الجزائر، الحماية المدنية 14 أو الاستعجالات الطبية 115 — أو توجّه إلى أقرب مصلحة استعجالات.",
+  },
 };
 
 export function notices(locale: Locale = "fr") {

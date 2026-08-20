@@ -1,3 +1,11 @@
+import {
+  AR_DESTINATIONS,
+  AR_GOALS,
+  AR_HERITAGE,
+  AR_HERITAGE_SUMMARIES,
+  AR_TERMS,
+  AR_UNIVERSE_TEXTS,
+} from "@/data/i18n/ar-content";
 import { EN_DESTINATIONS, EN_GOALS, EN_HERITAGE, EN_UNIVERSES } from "@/data/i18n/en-content";
 import { EN_DEMO_APPOINTMENTS, EN_DEMO_DOCUMENTS, EN_DEMO_JOURNEY } from "@/data/i18n/en-demo";
 import {
@@ -40,8 +48,9 @@ function warnMissing(kind: string, key: string, locale: Locale): void {
 }
 
 export function localizedGoal(goal: HealthGoal, locale: Locale): HealthGoal {
-  if (locale !== "en") return goal;
-  const text = EN_GOALS[goal.id as GoalId];
+  if (locale === "fr") return goal;
+  const table = locale === "ar" ? AR_GOALS : EN_GOALS;
+  const text = table[goal.id as GoalId];
   if (!text) {
     warnMissing("objectif", goal.id, locale);
     return goal;
@@ -50,7 +59,15 @@ export function localizedGoal(goal: HealthGoal, locale: Locale): HealthGoal {
 }
 
 export function localizedUniverse(universe: Universe, locale: Locale): Universe {
-  if (locale !== "en") return universe;
+  if (locale === "fr") return universe;
+  if (locale === "ar") {
+    const text = AR_UNIVERSE_TEXTS[universe.slug];
+    if (!text) {
+      warnMissing("univers", universe.slug, locale);
+      return universe;
+    }
+    return { ...universe, ...text };
+  }
   const text = EN_UNIVERSES[universe.slug];
   if (!text) {
     warnMissing("univers", universe.slug, locale);
@@ -60,7 +77,17 @@ export function localizedUniverse(universe: Universe, locale: Locale): Universe 
 }
 
 export function localizedHeritage(site: HeritageSite, locale: Locale): HeritageSite {
-  if (locale !== "en") return site;
+  if (locale === "fr") return site;
+  // Le nom du site sert de titre d'étape, et son résumé de détail d'étape :
+  // les deux se retrouvent dans le parcours généré.
+  if (locale === "ar") {
+    const nom = AR_HERITAGE[site.slug];
+    if (!nom) {
+      warnMissing("site", site.slug, locale);
+      return site;
+    }
+    return { ...site, name: nom, summary: AR_HERITAGE_SUMMARIES[site.slug] ?? site.summary };
+  }
   const text = EN_HERITAGE[site.slug];
   if (!text) {
     warnMissing("site", site.slug, locale);
@@ -77,7 +104,17 @@ export function localizedHeritage(site: HeritageSite, locale: Locale): HeritageS
 }
 
 export function localizedDestination(destination: Destination, locale: Locale): Destination {
-  if (locale !== "en") return destination;
+  if (locale === "fr") return destination;
+  // En arabe, le nom et l'accroche suffisent : ce sont eux qui apparaissent
+  // dans le titre du parcours et sur les cartes.
+  if (locale === "ar") {
+    const text = AR_DESTINATIONS[destination.slug];
+    if (!text) {
+      warnMissing("destination", destination.slug, locale);
+      return destination;
+    }
+    return { ...destination, name: text.name, tagline: text.tagline };
+  }
   const text = EN_DESTINATIONS[destination.slug];
   if (!text) {
     warnMissing("destination", destination.slug, locale);
@@ -144,8 +181,8 @@ const EN_TERMS: Record<string, string> = {
 };
 
 function term(value: string, locale: Locale): string {
-  if (locale !== "en") return value;
-  const found = EN_TERMS[value];
+  if (locale === "fr") return value;
+  const found = (locale === "ar" ? AR_TERMS : EN_TERMS)[value];
   if (!found) {
     warnMissing("terme", value, locale);
     return value;
@@ -155,7 +192,7 @@ function term(value: string, locale: Locale): string {
 
 /** Traduit une liste de termes du vocabulaire commun (langues, contrôles…). */
 export function localizedTerms(values: string[], locale: Locale): string[] {
-  return locale === "en" ? values.map((value) => term(value, locale)) : values;
+  return locale === "fr" ? values : values.map((value) => term(value, locale));
 }
 
 const terms = localizedTerms;

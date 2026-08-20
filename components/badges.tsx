@@ -2,7 +2,7 @@
 
 import { BadgeCheck, FileQuestion } from "lucide-react";
 import { useTranslation } from "@/components/i18n-provider";
-import { LOCALE_TAG } from "@/lib/i18n/config";
+import { LOCALE_TAG, type Locale } from "@/lib/i18n/config";
 import { localizedTerms } from "@/lib/i18n/content";
 import type { Verification } from "@/types/domain";
 
@@ -65,7 +65,7 @@ export function Eyebrow({ children }: { children: React.ReactNode }) {
   return <p className="eyebrow eyebrow-line">{children}</p>;
 }
 
-function formatDate(iso: string | null, locale: "fr" | "en", unknown: string): string {
+function formatDate(iso: string | null, locale: Locale, unknown: string): string {
   if (!iso) return unknown;
   return new Date(iso).toLocaleDateString(LOCALE_TAG[locale], {
     day: "numeric",

@@ -266,7 +266,7 @@ export function DocumentVault() {
             {audit.slice(0, 8).map((raw) => {
               const entry = localizedAuditEntry(raw, locale);
               return (
-              <li key={entry.id} className="border-l-2 pl-3.5" style={{ borderColor: "var(--border-strong)" }}>
+              <li key={entry.id} className="border-s-2 ps-3.5" style={{ borderColor: "var(--border-strong)" }}>
                 <p className="text-[0.82rem] leading-5">
                   <span className="font-medium">{entry.actor}</span> · {entry.target}
                 </p>

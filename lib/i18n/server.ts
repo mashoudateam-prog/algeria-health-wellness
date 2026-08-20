@@ -1,5 +1,6 @@
 import { headers } from "next/headers";
 import { DEFAULT_LOCALE, isLocale, type Locale } from "./config";
+import { ar } from "./dictionaries/ar";
 import { en } from "./dictionaries/en";
 import { fr, type Dictionary } from "./dictionaries/fr";
 
@@ -11,7 +12,7 @@ import { fr, type Dictionary } from "./dictionaries/fr";
  * devient impossible qu'une page existe dans une langue et pas dans l'autre.
  */
 
-const DICTIONARIES: Record<Locale, Dictionary> = { fr, en };
+const DICTIONARIES: Record<Locale, Dictionary> = { fr, en, ar };
 
 export async function getLocale(): Promise<Locale> {
   const store = await headers();

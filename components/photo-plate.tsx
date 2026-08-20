@@ -86,7 +86,7 @@ export function PhotoPlate({
       {children && <div className="absolute inset-0">{children}</div>}
 
       {image?.credit && (
-        <figcaption className="pointer-events-none absolute bottom-0 right-0 z-10 p-3">
+        <figcaption className="pointer-events-none absolute bottom-0 end-0 z-10 p-3">
           <span
             className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[0.62rem] leading-none text-white/75 backdrop-blur-md"
             style={{ background: "rgba(10,22,18,0.42)" }}

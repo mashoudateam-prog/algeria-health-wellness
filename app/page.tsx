@@ -16,6 +16,7 @@ import { PhotoPlate } from "@/components/photo-plate";
 import { Reveal } from "@/components/reveal";
 import { DESTINATIONS } from "@/data/destinations";
 import { localizePath } from "@/lib/i18n/config";
+import { localizedDestination } from "@/lib/i18n/content";
 import { fill, getTranslation } from "@/lib/i18n/server";
 
 /** Bandeau éditorial : quatre visages du pays, du Sahara à la Méditerranée. */
@@ -217,7 +218,7 @@ export default async function HomePage() {
         <div className="shell">
           <Reveal>
             <p className="eyebrow eyebrow-line" style={{ color: "var(--terracotta-soft, #c08a63)" }}>
-              <Sparkles size={14} className="mr-1 inline" />
+              <Sparkles size={14} className="me-1 inline" />
               {t.home.journeyEyebrow}
             </p>
             <h2 className="mt-5 max-w-3xl text-[clamp(2rem,4.6vw,3.4rem)]">
@@ -279,7 +280,9 @@ export default async function HomePage() {
           </div>
 
           <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-            {DESTINATIONS.slice(0, 4).map((destination, index) => (
+            {DESTINATIONS.slice(0, 4).map((raw, index) => {
+              const destination = localizedDestination(raw, locale);
+              return (
               <Reveal key={destination.slug} delay={index * 0.05}>
                 <Link href={link(`/destinations/${destination.slug}`)} className="group block">
                   <PhotoPlate
@@ -305,7 +308,8 @@ export default async function HomePage() {
                   <p className="mt-3.5 text-[0.84rem] leading-6 muted">{destination.intro.split(".")[0]}.</p>
                 </Link>
               </Reveal>
-            ))}
+              );
+            })}
           </div>
         </div>
       </section>
@@ -375,21 +379,17 @@ export default async function HomePage() {
               </div>
 
               <ul className="space-y-4">
-                {[
-                  { icon: ClipboardList, text: "Préparer les questions à poser au praticien" },
-                  { icon: Plane, text: "Organiser l'arrivée, les transferts et l'hébergement" },
-                  { icon: Compass, text: "Trouver des activités compatibles avec la récupération" },
-                ].map((item) => {
-                  const Icon = item.icon;
+                {t.home.conciergeHelps.map((text, index) => {
+                  const Icon = [ClipboardList, Plane, Compass][index];
                   return (
-                    <li key={item.text} className="card flex items-start gap-4 p-5">
+                    <li key={text} className="card flex items-start gap-4 p-5">
                       <Icon
                         size={19}
                         strokeWidth={1.6}
                         className="mt-0.5 shrink-0"
                         style={{ color: "var(--secondary)" }}
                       />
-                      <span className="text-[0.9rem] leading-6">{item.text}</span>
+                      <span className="text-[0.9rem] leading-6">{text}</span>
                     </li>
                   );
                 })}

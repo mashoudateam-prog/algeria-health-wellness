@@ -295,7 +295,7 @@ export function PanoramaViewer({
       <figure className={`frame frame-plain ${className}`}>
         {/* eslint-disable-next-line @next/next/no-img-element -- repli sans WebGL */}
         <img src={src} alt={alt} className="h-full w-full object-cover" />
-        <figcaption className="absolute bottom-3 left-3 rounded-full bg-black/45 px-3 py-1 text-[0.68rem] text-white/80 backdrop-blur-md">
+        <figcaption className="absolute bottom-3 start-3 rounded-full bg-black/45 px-3 py-1 text-[0.68rem] text-white/80 backdrop-blur-md">
           Vue à plat — la navigation 360° demande WebGL
         </figcaption>
       </figure>
@@ -313,7 +313,7 @@ export function PanoramaViewer({
 
       {hinted && ready && (
         <span className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-black/45 px-4 py-2 text-[0.76rem] text-white backdrop-blur-md">
-          <Compass size={13} className="mr-1.5 inline" />
+          <Compass size={13} className="me-1.5 inline" />
           Faites glisser pour regarder autour de vous
         </span>
       )}
@@ -325,7 +325,7 @@ export function PanoramaViewer({
       )}
 
       {caption && (
-        <figcaption className="pointer-events-none absolute bottom-3 left-3 flex items-center gap-1.5 rounded-full bg-black/45 px-3 py-1 text-[0.68rem] text-white/85 backdrop-blur-md">
+        <figcaption className="pointer-events-none absolute bottom-3 start-3 flex items-center gap-1.5 rounded-full bg-black/45 px-3 py-1 text-[0.68rem] text-white/85 backdrop-blur-md">
           <Maximize2 size={11} />
           {caption}
         </figcaption>

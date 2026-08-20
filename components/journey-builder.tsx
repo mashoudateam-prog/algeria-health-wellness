@@ -566,7 +566,7 @@ function JourneyResult({
                           {facility && (
                             <p className="mt-2.5 text-[0.78rem] faint">
                               {t.facilityKinds[facility.kind]} · {facility.name}
-                              {facility.demo && <span className="badge badge-demo ml-2">{t.common.demo}</span>}
+                              {facility.demo && <span className="badge badge-demo ms-2">{t.common.demo}</span>}
                             </p>
                           )}
                         </div>
@@ -643,7 +643,7 @@ function JourneyResult({
               <tbody>
                 {plan.quote.lines.map((line) => (
                   <tr key={line.label} className="border-b" style={{ borderColor: "var(--border)" }}>
-                    <td className="py-3.5 pr-4">
+                    <td className="py-3.5 pe-4">
                       {line.label}
                       {line.note && <span className="mt-1 block text-[0.76rem] leading-5 faint">{line.note}</span>}
                     </td>

@@ -95,6 +95,11 @@ export const fr = {
     conciergeBody:
       "Le concierge répond aux questions d'organisation à toute heure. Mais certaines situations demandent une voix, pas une interface — un conseiller reprend alors la main, à votre demande.",
     conciergeOpen: "Ouvrir le concierge",
+    conciergeHelps: [
+      "Préparer les questions à poser au praticien",
+      "Organiser l’arrivée, les transferts et l’hébergement",
+      "Trouver des activités compatibles avec la récupération",
+    ],
   },
 
   phases: {

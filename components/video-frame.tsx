@@ -80,12 +80,12 @@ export function VideoFrame({
             className="flex h-16 w-16 items-center justify-center rounded-full text-white backdrop-blur-md"
             style={{ background: "rgba(23,56,47,0.72)" }}
           >
-            <Play size={22} className="ml-0.5" fill="currentColor" />
+            <Play size={22} className="ms-0.5" fill="currentColor" />
           </span>
         </button>
       )}
 
-      <div className="absolute bottom-3 left-3 flex items-center gap-2">
+      <div className="absolute bottom-3 start-3 flex items-center gap-2">
         {playing && (
           <button
             type="button"

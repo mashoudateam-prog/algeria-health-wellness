@@ -1,17 +1,27 @@
 /**
  * Internationalisation — configuration.
  *
- * Deux langues seulement pour l'instant, et c'est délibéré. Traduire
- * automatiquement des contenus de santé dans neuf langues fabriquerait une
- * responsabilité juridique : un avertissement médical mal traduit est pire
- * qu'un avertissement absent. Chaque langue ajoutée ici doit être relue par
- * quelqu'un qui la parle.
+ * Trois langues, et pas neuf : traduire automatiquement des contenus de santé
+ * fabriquerait une responsabilité juridique — un avertissement médical mal
+ * traduit est pire qu'un avertissement absent.
  *
- * L'arabe viendra ensuite : il demande en plus le sens droite-à-gauche, ce qui
- * touche toute la mise en page et ne s'improvise pas.
+ * ⚠️ Chaque langue ajoutée ici doit être relue par quelqu'un qui la parle,
+ * les mentions réglementaires en premier. L'arabe livré ici attend cette
+ * relecture : il est complet et fonctionnel, il n'est pas encore validé.
+ *
+ * L'arabe amène le sens droite-à-gauche. La mise en page y était préparée —
+ * grille et `gap` plutôt que marges dirigées — et les quelques propriétés
+ * physiques restantes sont devenues logiques.
+ *
+ * Couverture de l'arabe, dite sans détour : interface, parcours généré,
+ * garde-fous, objectifs, univers, noms et résumés de sites, noms et accroches
+ * de destination. Retombent sur le français : le corps éditorial des huit
+ * fiches destination, les vingt-deux fiches d'établissement, les programmes de
+ * séjour et le compte de démonstration. C'est le repli prévu par
+ * l'architecture, et il est préférable à de la prose de santé non relue.
  */
 
-export const LOCALES = ["fr", "en"] as const;
+export const LOCALES = ["fr", "en", "ar"] as const;
 
 export type Locale = (typeof LOCALES)[number];
 
@@ -20,24 +30,28 @@ export const DEFAULT_LOCALE: Locale = "fr";
 export const LOCALE_LABEL: Record<Locale, string> = {
   fr: "Français",
   en: "English",
+  ar: "العربية",
 };
 
 /** Étiquette courte du sélecteur de langue. */
 export const LOCALE_SHORT: Record<Locale, string> = {
   fr: "FR",
   en: "EN",
+  ar: "ع",
 };
 
 /** Balise de langue HTML, pour `lang` et pour les moteurs de recherche. */
 export const LOCALE_TAG: Record<Locale, string> = {
   fr: "fr-DZ",
   en: "en",
+  ar: "ar-DZ",
 };
 
-/** Sens d'écriture. Prévu dès maintenant pour que l'arabe n'oblige pas à tout revoir. */
+/** Sens d'écriture, posé sur l'élément racine. */
 export const LOCALE_DIR: Record<Locale, "ltr" | "rtl"> = {
   fr: "ltr",
   en: "ltr",
+  ar: "rtl",
 };
 
 export function isLocale(value: string): value is Locale {
