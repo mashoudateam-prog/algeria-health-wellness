@@ -11,7 +11,7 @@
 | **Nature** | Plateforme web — prototype fonctionnel déployé |
 | **Dépôt de code** | `github.com/mashoudateam-prog/algeria-health-wellness` |
 | **Langues** | Français, Anglais, **Arabe** — dont le sens droite-à-gauche |
-| **État** | 19 pages, 6 API, 56 tests automatisés, build de production validé |
+| **État** | 19 pages, 6 API, 59 tests automatisés, build de production validé |
 
 ---
 
@@ -92,7 +92,7 @@ L'immersion sert le parcours, elle ne le remplace pas. Chaque destination et cha
 - Trois langues, dont l'arabe et son sens droite-à-gauche — le parcours généré, les justifications, les mentions réglementaires et la compréhension du langage naturel suivent la langue du visiteur
 - Comptes et rôles : visiteur, partenaire, modérateur, administrateur. Mot de passe dérivé par scrypt, session en cookie `httpOnly` dont seule l'empreinte est conservée
 - Persistance PostgreSQL optionnelle : avec une base, les décisions de modération survivent au redéploiement et le dédoublonnage est arbitré par deux index uniques
-- 56 tests automatisés, dont 10 sur les garde-fous et 12 exécutés contre un vrai moteur PostgreSQL
+- 59 tests automatisés, dont 10 sur les garde-fous et 12 exécutés contre un vrai moteur PostgreSQL
 
 **Prochains jalons :** relecture de l'arabe par un locuteur natif, intégration des six langues restantes, captation des panoramas des stations, conventionnement des premières stations thermales réelles.
 

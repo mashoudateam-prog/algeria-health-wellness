@@ -114,13 +114,13 @@ Le fil couvre en priorité ce qui fait vivre la filière : ouvertures de centres
 ```bash
 npm install
 npm run typecheck   # TypeScript strict — aucune erreur
-npm test            # 56 tests, 56 passants
+npm test            # 59 tests, 59 passants
 npm run build       # build de production validé
 ```
 
 **Volumétrie :** 95 fichiers de code, ~19 700 lignes, 19 pages, 6 routes d'API.
 
-**Répartition des 56 tests :**
+**Répartition des 59 tests :**
 
 | Domaine | Nombre | Exemples |
 |---|---|---|
@@ -129,6 +129,7 @@ npm run build       # build de production validé
 | Parcours et compréhension | 17 | *« cure thermale » ne déclenche pas d'acte médical* · *le séjour de remise en forme se termine par son plan de suite* · *le parcours généré suit la langue du visiteur* · *un nom de ville ne se reconnaît qu'entier* |
 | Agent de veille | 10 | *une source non vérifiable est refusée* · *les doublons sont écartés* · *les dates françaises sont lues, et rien n'est deviné* |
 | Persistance PostgreSQL | 6 | *le schéma se crée et un élément fait l'aller-retour* · *la base refuse le doublon, par URL comme par titre* — exécutés contre PGlite, PostgreSQL compilé en WebAssembly |
+| Traductions | 3 |
 | Comptes et rôles | 6 | *le mot de passe n'est jamais stocké en clair* · *la même adresse ne peut pas servir deux fois* · *la hiérarchie des rôles est une échelle* |
 
 **Deux tests qui méritent d'être montrés.**

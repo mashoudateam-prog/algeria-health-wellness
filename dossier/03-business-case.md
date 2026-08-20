@@ -4,12 +4,11 @@
 ---
 
 > **Note de méthode, à lire avant les chiffres.**
-> Ce document distingue rigoureusement trois natures d'information :
+> Ce document distingue deux natures d'information, et nomme la source de tout le reste :
 > - **[FAIT]** — vérifiable dans le prototype ou dans le code livré.
 > - **[HYPOTHÈSE]** — paramètre de modèle, explicitement posé, que le lecteur peut contester et remplacer.
-> - **[À SOURCER]** — donnée de marché externe à renseigner à partir d'une source officielle nommée.
 >
-> Ce projet applique à son propre dossier la règle qu'il applique à sa plateforme : **on n'invente pas un chiffre parce qu'il manque.** Les cases `[À SOURCER]` sont à remplir avec les données de l'Office National des Statistiques, du Ministère du Tourisme et de l'Artisanat, de l'Office National du Tourisme et du World Travel & Tourism Council avant dépôt. La structure du modèle, elle, est complète et calculable.
+> Ce projet applique à son propre dossier la règle qu'il applique à sa plateforme : **on n'invente pas un chiffre parce qu'il manque.** Chaque donnée de marché ci-dessous porte le nom de qui l'a annoncée, dans quel cadre et à quelle date. Deux figures restent dérivées d'un calcul plutôt que citées : elles sont signalées comme telles.
 
 ---
 
@@ -17,9 +16,11 @@
 
 ### 1.1 L'actif dormant
 
-L'Algérie compte des sources thermales exploitées depuis l'Antiquité — Hammam Meskhoutine dans la wilaya de Guelma, Hammam Essalihine à Khenchela, Hammam Righa à Aïn Defla, Hammam Boughrara près de Tlemcen. Certaines comptent parmi les plus chaudes du bassin méditerranéen. Elles sont fréquentées, mais **presque aucune n'est réservable, décrite ou visible depuis l'étranger**.
+L'Algérie compte des sources thermales exploitées depuis l'Antiquité — Hammam Meskhoutine dans la wilaya de Guelma, Hammam Essalihine à Khenchela, Hammam Righa à Aïn Defla, Hammam Boughrara près de Tlemcen. Certaines comptent parmi les plus chaudes du bassin méditerranéen.
 
-C'est la définition d'un actif dormant : la ressource existe, la demande existe, l'interface manque.
+Le ministère du Tourisme et de l'Artisanat en a recensé **282**, dont 61 % au nord et 39 % au sud. **Trente-deux seulement sont exploitées en station**, avec trois centres de thalassothérapie et trente-quatre bains minéraux traditionnels ; cinquante-neuf projets sont agréés, dont vingt-quatre en construction.
+
+**Un actif dormant se mesure à cet écart : 282 ressources recensées, 32 exploitées.** La ressource existe, la demande existe, l'interface manque.
 
 ### 1.2 Segments adressés
 
@@ -32,18 +33,30 @@ C'est la définition d'un actif dormant : la ressource existe, la demande existe
 
 **Séquence de conquête recommandée : A → B → D → C.** La diaspora est le marché d'amorçage naturel : elle connaît le pays, parle la langue, dispose du réseau familial qui résout la logistique, et cherche déjà comment occuper utilement trois semaines. Elle ne demande pas d'être convaincue de venir : elle demande à être organisée. Le segment C, le plus rémunérateur, exige une confiance qui ne s'obtient qu'après avoir constitué un socle d'établissements vérifiés — il vient en dernier.
 
-### 1.3 Volumes à renseigner
+### 1.3 Le marché, en chiffres
 
-| Donnée | Valeur | Source recommandée |
+| Donnée | Valeur | Source |
 |---|---|---|
-| Arrivées de touristes non-résidents en Algérie | `[À SOURCER]` | ONS / Ministère du Tourisme |
-| Part des arrivées liées à la diaspora | `[À SOURCER]` | Ministère du Tourisme |
-| Nombre de stations thermales recensées et leur capacité | `[À SOURCER]` | Ministère du Tourisme / ONT |
-| Dépense moyenne par touriste et par séjour | `[À SOURCER]` | ONS / WTTC |
-| Contribution du tourisme au PIB algérien | `[À SOURCER]` | WTTC — *Economic Impact Report*, édition la plus récente |
-| Chiffre d'affaires de la thalassothérapie et du thermalisme en Tunisie *(comparable)* | `[À SOURCER]` | ONTT Tunisie |
+| Touristes accueillis en Algérie en 2024 | **plus de 3,5 millions** | Nabil Mellouk, directeur central au ministère du Tourisme et de l'Artisanat, Chaîne 2, 10 février 2025 |
+| dont ressortissants étrangers | **2,3 millions** | *idem* |
+| dont diaspora algérienne | **1,2 million** | *idem* |
+| Progression 2024 sur 2023 | **+10 %** | *idem* |
+| Recettes touristiques 2023 | **1,6 milliard USD** | Mokhtar Didouche, ministre du Tourisme et de l'Artisanat, mai 2024 |
+| Part du tourisme dans le PIB | **2 %**, objectif 5 % | *idem* |
+| Objectif national à 2030 | **12 millions de touristes** | *idem* |
+| Sources thermales recensées | **282** — 61 % nord, 39 % sud | Mokhtar Didouche, forum international du tourisme thermal, Sétif, 28 octobre 2023 |
+| Stations thermales exploitées | **32** + 3 centres de thalassothérapie + 34 bains traditionnels | *idem* |
+| Projets de station agréés | **59**, dont 24 en construction | *idem* |
 
-> **Pourquoi la Tunisie est le bon comparable.** Elle a bâti une filière de thalassothérapie de rang mondial à partir d'atouts géographiques et tarifaires comparables à ceux de l'Algérie — avec, sur le thermalisme, une ressource naturelle **moins abondante**. L'écart entre les deux pays ne s'explique donc pas par la géologie mais par **l'organisation, la lisibilité de l'offre et la confiance**. C'est exactement ce que cette plateforme produit. **Cet argument est le cœur du dossier : ce qui manque à l'Algérie est logiciel, pas géologique.**
+**Deux figures dérivées, signalées comme telles.** La dépense moyenne 2023 s'obtient en divisant les recettes par les visiteurs : **485 USD par visiteur**. C'est une moyenne nationale, tirée vers le bas par les séjours courts et les visites familiales — un séjour de cure de sept à quatorze jours se situe structurellement au-dessus, et c'est précisément l'écart que ce projet cherche à capter. La seconde figure dérivée est le seuil de rentabilité du §4.4, calculé à partir des hypothèses du modèle.
+
+> **Pourquoi la Tunisie est le bon comparable — et ce que la comparaison démontre.**
+>
+> La Tunisie est la **deuxième destination mondiale de thalassothérapie, après la France**. Elle exploite **60 centres de thalassothérapie** qui ont accueilli **170 000 curistes en 2024**, **63 stations thermales traditionnelles** et 390 centres d'hydrothérapie ; la France y représente 40 % des arrivées *(Office national du thermalisme et de l'hydrothérapie, juin 2025)*.
+>
+> Mettez les deux pays côte à côte : l'Algérie a recensé **282 sources thermales** et en exploite **32** ; la Tunisie en exploite **63** et y a ajouté **60 centres de thalassothérapie** là où l'Algérie en compte **3**.
+>
+> **L'écart ne vient pas de la ressource — l'Algérie en a davantage. Il vient de l'organisation, de la lisibilité de l'offre et de la confiance.** C'est exactement ce que cette plateforme produit. **Ce qui manque à l'Algérie est logiciel, pas géologique.**
 
 ---
 
@@ -170,7 +183,7 @@ Ce n'est pas une optimisation technique. **C'est la raison pour laquelle le mod�
 
 ### 5.1 Six mécanismes d'impact
 
-**1. Rendre le patrimoine thermal réservable.** Des sources fréquentées depuis l'époque romaine n'apparaissent aujourd'hui dans aucune offre structurée. Les faire entrer dans un parcours calculé, avec une description, une saison recommandée et un temps de trajet, c'est les faire exister commercialement. *Indicateur : nombre de stations thermales référencées et vérifiées.*
+**1. Rendre le patrimoine thermal réservable.** Sur 282 sources recensées, 32 sont exploitées en station — et presque aucune n'est décrite, datée ou réservable depuis l'étranger. Les faire entrer dans un parcours calculé, avec une description, une saison recommandée et un temps de trajet, c'est les faire exister commercialement. Les 59 projets agréés donnent la mesure de ce qui arrive : il leur faudra une vitrine. *Indicateur : nombre de stations thermales référencées et vérifiées.*
 
 **2. Étalement saisonnier.** **[FAIT]** Le moteur applique une règle explicite : Biskra et Ghardaïa sont déconseillées de juin à septembre, la côte est privilégiée d'avril à juin. Un visiteur qui décrit un projet de remise en forme en août est réorienté vers le littoral ; un projet de cure en janvier l'est vers le Sud. **La saisonnalité n'est pas subie, elle est arbitrée par le produit.** *Indicateur : distribution mensuelle des séjours construits.*
 
@@ -233,4 +246,15 @@ La plateforme peut restituer, sans jamais exposer de donnée personnelle :
 
 ---
 
-*Toutes les valeurs marquées `[HYPOTHÈSE]` sont des paramètres de modèle, posés pour être discutés et remplacés. Les valeurs marquées `[À SOURCER]` doivent être renseignées à partir des sources officielles nommées avant dépôt du dossier. Les éléments marqués `[FAIT]` sont vérifiables dans le prototype et dans le code livré.*
+*Toutes les valeurs marquées `[HYPOTHÈSE]` sont des paramètres de modèle, posés pour être discutés et remplacés. Les éléments marqués `[FAIT]` sont vérifiables dans le prototype et dans le code livré. Les données de marché du §1 sont des déclarations officielles publiques, chacune attribuée à son auteur et à sa date — elles sont vérifiables, et elles doivent l'être.*
+
+---
+
+## Sources
+
+- Tourisme algérien 2024 — Nabil Mellouk, directeur central au ministère du Tourisme et de l'Artisanat, radio Chaîne 2, 10 février 2025. [algerie-eco.com](https://algerie-eco.com/2025/02/12/algerie-23-millions-de-touristes-etrangers-en-2024/)
+- Recettes touristiques et part du PIB — Mokhtar Didouche, ministre du Tourisme et de l'Artisanat, mai 2024. [french.news.cn](https://french.news.cn/20240522/e53ecf1ec88a4d8485a60b661679bbcd/c.html)
+- Sources et stations thermales — Mokhtar Didouche, forum international sur le tourisme thermal, Sétif, 28 octobre 2023. [algerie-eco.com](https://www.algerie-eco.com/2023/10/28/lalgerie-compte-282-sources-thermales/)
+- Thalassothérapie et thermalisme en Tunisie — Office national du thermalisme et de l'hydrothérapie (ONTH), juin 2025. [kapitalis.com](https://kapitalis.com/tunisie/2025/06/12/la-tunisie-2e-destination-mondiale-de-thalassotherapie-en-2024/)
+
+*Les données algériennes proviennent de déclarations officielles relayées par la presse, non de publications statistiques de l'ONS. Si le règlement du concours exige une source institutionnelle primaire, ces mêmes chiffres sont à demander au ministère du Tourisme et de l'Artisanat, qui en est l'auteur.*

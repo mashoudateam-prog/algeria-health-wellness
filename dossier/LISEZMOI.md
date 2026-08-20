@@ -32,6 +32,7 @@ selon la machine.
 
 - L'Executive Summary doit tenir en **3 pages** : le vérifier après toute
   addition, la contrainte est dans le règlement du concours.
-- Remplir les champs `[À SOURCER]` du Business Case avec les données
-  officielles (ONS, Ministère du Tourisme, WTTC).
+- Revérifier les données de marché du Business Case à leur source : elles
+  datent de février 2025 pour les arrivées et d'octobre 2023 pour le
+  thermalisme, et chacune porte le nom de qui l'a annoncée.
 - Renseigner l'URL de déploiement et le lien de la vidéo.
